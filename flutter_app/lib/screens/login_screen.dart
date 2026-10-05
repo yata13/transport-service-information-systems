@@ -90,7 +90,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.verified_user, color: Colors.amber, size: 48),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(21),
+                        child: Image.asset(
+                          'assets/images/app_logo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.verified_user, color: Colors.amber, size: 48),
+                        ),
+                      ),
                     ),
                   ],
                 ),

@@ -4,6 +4,7 @@ import '../services/supabase_service.dart';
 import '../models/bajaj_vehicle.dart';
 import '../widgets/verifying_progress_dialog.dart';
 import 'validity_result_screen.dart';
+import 'vehicle_not_found_screen.dart';
 
 class VerificationScreen extends StatefulWidget {
   final Function(BajajVehicle vehicle)? onSelectVehicle;
@@ -22,9 +23,9 @@ class VerificationScreen extends StatefulWidget {
 class _VerificationScreenState extends State<VerificationScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _didController = TextEditingController(text: 'DID-25-000784521');
-  final _plateController = TextEditingController(text: 'AA-12345');
-  final _vinController = TextEditingController(text: 'MBN12345678912345');
+  final _didController = TextEditingController(text: 'DID-GD-0489120');
+  final _plateController = TextEditingController(text: '3-AM-04891');
+  final _vinController = TextEditingController(text: 'TVS98234109482103');
 
   bool _isScannerOpen = false;
 
@@ -35,59 +36,46 @@ class _VerificationScreenState extends State<VerificationScreen>
   }
 
   void _runVerification(String query, String type) async {
-    if (query.trim().isEmpty) return;
+    final clean = query.trim();
+    if (clean.isEmpty) return;
 
     // Show Progress Dialog with 3 steps
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => VerifyingProgressDialog(
-        queryValue: query,
+        queryValue: clean,
         queryType: type,
         onFinished: () async {
           Navigator.pop(context); // close progress dialog
 
           // Query Supabase / Local
-          final vehicle = await SupabaseService.verifyVehicle(query: query, type: type);
+          final vehicle = await SupabaseService.verifyVehicle(query: clean, type: type);
 
           if (mounted) {
-            final targetVehicle = vehicle ??
-                BajajVehicle(
-                  id: 'illegal-1',
-                  digitalId: query,
-                  plateNumber: type == 'plate' ? query : 'ያልታወቀ (Unknown)',
-                  vin: type == 'vin' ? query : 'VIN-UNREGISTERED',
-                  vehicleType: 'Bajaj (ባጃጅ)',
-                  bajajModel: 'ያልተመዘገበ',
-                  bajajAssociation: 'በጎንደር ያልተመዘገበ',
-                  color: 'ያልታወቀ',
-                  owner: 'ያልታወቀ ግለሰብ',
-                  ownerPhone: '-',
-                  driverName: 'ያልተመዘገበ',
-                  driverPhone: '-',
-                  driverPhoto: '',
-                  kebele: 'ያልታወቀ',
-                  address: 'በጎንደር ከተማ መዝገብ ውስጥ የለም',
-                  permitNo: 'NO-PERMIT',
-                  issueDate: '2025-01-01',
-                  expiryDate: '2025-01-01',
-                  authorizedArea: 'ያልተፈቀደ (Illegal)',
-                  status: 'ILLEGAL',
-                  isBlacklisted: true,
-                  blacklistReason: 'በጎንደር ትራንስፖርት ዳታቤዝ ውስጥ ያልተገኘ ህገወጥ ተሽከርካሪ',
-                  qrCodeValue: query,
-                  registeredCity: 'Gondar / ጎንደር',
-                );
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ValidityResultScreen(
-                  vehicle: targetVehicle,
-                  onNavigate: widget.onNavigate,
+            if (vehicle != null) {
+              // Real vehicle found in Gondar Registry
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ValidityResultScreen(
+                    vehicle: vehicle,
+                    onNavigate: widget.onNavigate,
+                  ),
                 ),
-              ),
-            );
+              );
+            } else {
+              // Vehicle Not Found - Do NOT create fake data!
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => VehicleNotFoundScreen(
+                    searchedQuery: clean,
+                    queryType: type,
+                  ),
+                ),
+              );
+            }
           }
         },
       ),
@@ -206,14 +194,22 @@ class _VerificationScreenState extends State<VerificationScreen>
               children: [
                 _buildQuickDemoCard(
                   titleAm: '1. ሕጋዊ ፈቃድ (Valid)',
-                  subtitle: 'ሰሌዳ: AA-12345',
+                  subtitle: 'ሰሌዳ: 3-AM-04891',
                   color: Colors.green,
+                  query: '3-AM-04891',
+                  type: 'plate',
+                ),
+                const SizedBox(width: 8),
+                _buildQuickDemoCard(
+                  titleAm: '2. ፈቃድ (AA-12345)',
+                  subtitle: 'DID: DID-25-000784521',
+                  color: Colors.green.shade700,
                   query: 'AA-12345',
                   type: 'plate',
                 ),
                 const SizedBox(width: 8),
                 _buildQuickDemoCard(
-                  titleAm: '2. ጊዜው ያለፈበት (Expired)',
+                  titleAm: '3. ጊዜው ያለፈበት (Expired)',
                   subtitle: 'ሰሌዳ: 3-AM-99999',
                   color: Colors.amber.shade800,
                   query: '3-AM-99999',
@@ -221,10 +217,10 @@ class _VerificationScreenState extends State<VerificationScreen>
                 ),
                 const SizedBox(width: 8),
                 _buildQuickDemoCard(
-                  titleAm: '3. ያልተመዘገበ (Illegal)',
-                  subtitle: 'ሰሌዳ: 3-AM-00000',
+                  titleAm: '4. የታገደ (Suspended)',
+                  subtitle: 'ሰሌዳ: 3-AM-11002',
                   color: Colors.red,
-                  query: '3-AM-00000',
+                  query: '3-AM-11002',
                   type: 'plate',
                 ),
               ],
@@ -266,14 +262,14 @@ class _VerificationScreenState extends State<VerificationScreen>
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const Text(
-                              'ዲጂታል መታወቂያ (Digital ID)',
+                              'ዲጂታል መታወቂያ (Digital ID / QR Value)',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                             ),
                             const SizedBox(height: 8),
                             TextField(
                               controller: _didController,
                               decoration: InputDecoration(
-                                hintText: 'DID-25-000784521',
+                                hintText: 'ለምሳሌ፡ DID-GD-0489120 ወይም 3-AM-04891',
                                 prefixIcon: const Icon(Icons.qr_code),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                               ),
@@ -342,7 +338,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                             TextField(
                               controller: _plateController,
                               decoration: InputDecoration(
-                                hintText: 'ለምሳሌ፡ AA-12345 ወይም 3-AM-04891',
+                                hintText: 'ለምሳሌ፡ 3-AM-04891 ወይም AA-12345',
                                 prefixIcon: const Icon(Icons.directions_car),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                               ),
@@ -373,7 +369,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                             TextField(
                               controller: _vinController,
                               decoration: InputDecoration(
-                                hintText: 'MBN12345678912345',
+                                hintText: 'ለምሳሌ፡ TVS98234109482103',
                                 prefixIcon: const Icon(Icons.tag),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                               ),

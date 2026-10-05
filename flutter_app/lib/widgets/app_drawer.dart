@@ -120,7 +120,14 @@ class AppDrawer extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.amber.shade400, width: 1.5),
                         ),
-                        child: const Icon(Icons.verified_user, color: Colors.amber, size: 26),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.asset(
+                            'assets/images/app_logo.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.verified_user, color: Colors.amber, size: 26),
+                          ),
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white70, size: 20),

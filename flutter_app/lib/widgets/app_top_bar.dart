@@ -40,7 +40,14 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.verified_user, color: Colors.amber, size: 22),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/images/app_logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(Icons.verified_user, color: Colors.amber, size: 22),
+              ),
+            ),
           ),
           const SizedBox(width: 10),
 

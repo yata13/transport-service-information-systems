@@ -9,6 +9,7 @@ class SupabaseService {
   static final List<TrafficViolationReport> _localReports = List.from(initialReports);
 
   static bool isConfigured = false;
+  static bool _hasAttemptedSeed = false;
 
   static SupabaseClient? get _client {
     try {
@@ -24,10 +25,38 @@ class SupabaseService {
   /// Check if Supabase connection is active
   static bool get isConnected => isConfigured && _client != null;
 
+  /// Clean string of non-alphanumeric characters for fuzzy matching
+  static String _normalize(String s) {
+    return s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+  }
+
+  /// Auto-seed Supabase if the bajaj_vehicles table exists but is empty
+  static Future<void> _checkAndSeedSupabase() async {
+    if (_hasAttemptedSeed || !isConnected) return;
+    _hasAttemptedSeed = true;
+
+    try {
+      final existing = await _client!.from('bajaj_vehicles').select('id').limit(1);
+      if (existing.isEmpty) {
+        debugPrint('Seeding initial vehicles to Supabase...');
+        for (final v in initialBajajDatabase) {
+          try {
+            await _client!.from('bajaj_vehicles').upsert(v.toJson());
+          } catch (e) {
+            debugPrint('Failed to seed vehicle ${v.plateNumber}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Supabase auto-seed check skipped or table pending: $e');
+    }
+  }
+
   /// Get all vehicles
   static Future<List<BajajVehicle>> getAllVehicles() async {
     try {
       if (isConnected) {
+        await _checkAndSeedSupabase();
         final res = await _client!.from('bajaj_vehicles').select();
         if (res.isNotEmpty) {
           final list = res.map((item) => BajajVehicle.fromJson(item)).toList();
@@ -47,55 +76,75 @@ class SupabaseService {
     required String query,
     required String type,
   }) async {
-    final clean = query.trim().toUpperCase();
-    if (clean.isEmpty) return null;
+    final raw = query.trim();
+    if (raw.isEmpty) return null;
 
-    // 1. Try Supabase
+    final upper = raw.toUpperCase();
+    final norm = _normalize(raw);
+
+    // 1. Try Supabase if connected
     try {
       if (isConnected) {
-        PostgrestFilterBuilder<List<Map<String, dynamic>>> request =
-            _client!.from('bajaj_vehicles').select();
+        // Query by plate or DID or VIN or permit
+        final res = await _client!
+            .from('bajaj_vehicles')
+            .select()
+            .or('plate_number.ilike.%$upper%,digital_id.ilike.%$upper%,vin_chassis.ilike.%$upper%,permit_number.ilike.%$upper%')
+            .limit(1);
 
-        if (type == 'plate') {
-          final res = await request.ilike('plate_number', '%$clean%').limit(1);
-          if (res.isNotEmpty) return BajajVehicle.fromJson(res.first);
-        } else if (type == 'vin') {
-          final res = await request.ilike('vin_chassis', '%$clean%').limit(1);
-          if (res.isNotEmpty) return BajajVehicle.fromJson(res.first);
-        } else {
-          final res = await request.or(
-            'digital_id.ilike.%$clean%,qr_code_value.ilike.%$clean%,plate_number.ilike.%$clean%',
-          ).limit(1);
-          if (res.isNotEmpty) return BajajVehicle.fromJson(res.first);
+        if (res.isNotEmpty) {
+          return BajajVehicle.fromJson(res.first);
         }
       }
     } catch (e) {
       debugPrint('Supabase query error: $e');
     }
 
-    // 2. Fallback to local database
+    // 2. Comprehensive Search across Local Registry (Exact, Normalized, Partial)
     for (final v in _localVehicles) {
-      if (type == 'plate' && v.plateNumber.toUpperCase().contains(clean)) {
+      final vPlate = v.plateNumber.toUpperCase();
+      final vPlateNorm = _normalize(v.plateNumber);
+      final vDid = v.digitalId.toUpperCase();
+      final vDidNorm = _normalize(v.digitalId);
+      final vVin = v.vin.toUpperCase();
+      final vVinNorm = _normalize(v.vin);
+      final vQr = v.qrCodeValue.toUpperCase();
+      final vPermit = v.permitNo.toUpperCase();
+      final vDriver = v.driverName.toLowerCase();
+      final vOwner = v.owner.toLowerCase();
+
+      // Check Plate Number (exact, contains, or normalized)
+      if (vPlate == upper || vPlate.contains(upper) || (norm.length >= 3 && vPlateNorm.contains(norm))) {
         return v;
       }
-      if (type == 'vin' && v.vin.toUpperCase().contains(clean)) {
+
+      // Check Digital ID
+      if (vDid == upper || vDid.contains(upper) || (norm.length >= 4 && vDidNorm.contains(norm))) {
         return v;
       }
-      if (v.digitalId.toUpperCase().contains(clean) ||
-          v.qrCodeValue.toUpperCase().contains(clean) ||
-          v.plateNumber.toUpperCase().contains(clean)) {
+
+      // Check QR Code value
+      if (vQr.contains(upper) || (norm.length >= 4 && _normalize(vQr).contains(norm))) {
+        return v;
+      }
+
+      // Check VIN / Chassis
+      if (vVin == upper || vVin.contains(upper) || (norm.length >= 4 && vVinNorm.contains(norm))) {
+        return v;
+      }
+
+      // Check Permit Number
+      if (vPermit.contains(upper) || (norm.length >= 4 && _normalize(vPermit).contains(norm))) {
+        return v;
+      }
+
+      // Check Driver or Owner name (Amharic or English)
+      if (vDriver.contains(raw.toLowerCase()) || vOwner.contains(raw.toLowerCase())) {
         return v;
       }
     }
 
-    // If query looks like a valid simulated query from quick test buttons
-    if (clean.contains('AA-12345') || clean.contains('DID-25')) {
-      return _localVehicles[0];
-    }
-    if (clean.contains('99999') || clean.contains('0899211')) {
-      return _localVehicles[2];
-    }
-
+    // If query doesn't match any registered vehicle in the system, return null
     return null;
   }
 

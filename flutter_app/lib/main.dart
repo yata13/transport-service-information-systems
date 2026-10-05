@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/supabase_service.dart';
 
 void main() async {
@@ -32,7 +32,7 @@ class GondarTrafficApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gondar Traffic Bajaj Control',
+      title: 'የጎንደር ትራፊክ ባጃጅ ቁጥጥር',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -51,7 +51,8 @@ class GondarTrafficApp extends StatelessWidget {
           elevation: 2,
         ),
       ),
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }
+

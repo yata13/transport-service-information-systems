@@ -21,16 +21,16 @@ class _VerifyingProgressDialogState extends State<VerifyingProgressDialog> {
 
   final List<Map<String, String>> _steps = [
     {
-      'am': 'የጎንደር ከተማ ማዕከላዊ ዳታቤዝ መፈለግ...',
-      'en': 'Searching Gondar Central Registry...',
+      'am': '1. የጎንደር ማዕከላዊ መዝገብ መፈለግ...',
+      'en': 'Querying Gondar central transport registry...',
     },
     {
-      'am': 'የመንገድ ፈቃድ እና ሁኔታ ማረጋገጥ...',
-      'en': 'Validating City Transport Permit...',
+      'am': '2. የፈቃድ ቁጥር እና ሰነዶች መመርመር...',
+      'en': 'Checking permit and registration validity...',
     },
     {
-      'am': 'የሰሌዳ እና ቻሲስ ቁጥር ማመሳከር...',
-      'en': 'Matching Chassis & Plate Number...',
+      'am': '3. የሰሌዳ እና የቻሲስ መረጃ ማመሳከር...',
+      'en': 'Cross-matching plate, VIN & driver records...',
     },
   ];
 
@@ -41,11 +41,11 @@ class _VerifyingProgressDialogState extends State<VerifyingProgressDialog> {
   }
 
   void _startAnimation() async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 350));
     if (mounted) setState(() => _currentStep = 1);
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
     if (mounted) setState(() => _currentStep = 2);
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
     if (mounted) {
       widget.onFinished();
     }
@@ -57,7 +57,7 @@ class _VerifyingProgressDialogState extends State<VerifyingProgressDialog> {
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(22.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -65,94 +65,95 @@ class _VerifyingProgressDialogState extends State<VerifyingProgressDialog> {
             Stack(
               alignment: Alignment.center,
               children: [
-                SizedBox(
-                  width: 76,
-                  height: 76,
+                const SizedBox(
+                  width: 68,
+                  height: 68,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    color: const Color(0xFF0C355B),
-                    backgroundColor: Colors.blue.shade100,
+                    color: Color(0xFF0C355B),
+                    backgroundColor: Color(0xFFE2E8F0),
                   ),
                 ),
                 Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0C355B),
+                  width: 50,
+                  height: 50,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0C355B),
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
-                  child: const Icon(Icons.qr_code_scanner, color: Colors.amber, size: 28),
+                  child: const Icon(Icons.search, color: Colors.amber, size: 24),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
             const Text(
-              'ተሽከርካሪ በመፈተሽ ላይ...',
+              'መረጃ በማመሳከር ላይ...',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0C355B),
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              'Query: ${widget.queryValue}',
-              style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'ፍተሻ: ${widget.queryValue}',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF0C355B), fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // Steps
+            // Neutral inspection steps (no misleading green checkmarks)
             Column(
               children: List.generate(_steps.length, (index) {
-                final isDone = index < _currentStep;
+                final isPassed = index < _currentStep;
                 final isCurrent = index == _currentStep;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  padding: const EdgeInsets.symmetric(vertical: 5.0),
                   child: Row(
                     children: [
                       Container(
-                        width: 22,
-                        height: 22,
+                        width: 20,
+                        height: 20,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isDone
-                              ? Colors.green
+                          color: isPassed
+                              ? const Color(0xFF0C355B)
                               : isCurrent
-                                  ? const Color(0xFF0C355B)
-                                  : Colors.grey.shade300,
+                                  ? const Color(0xFF1E5B94)
+                                  : Colors.grey.shade200,
                         ),
                         child: Center(
-                          child: isDone
-                              ? const Icon(Icons.check, size: 14, color: Colors.white)
+                          child: isPassed
+                              ? const Icon(Icons.done, size: 12, color: Colors.white)
                               : isCurrent
                                   ? const SizedBox(
-                                      width: 10,
-                                      height: 10,
+                                      width: 8,
+                                      height: 8,
                                       child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                                        strokeWidth: 1.5,
                                         color: Colors.white,
                                       ),
                                     )
                                   : Text(
                                       '${index + 1}',
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: 9,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.grey.shade600,
                                       ),
                                     ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +162,7 @@ class _VerifyingProgressDialogState extends State<VerifyingProgressDialog> {
                               _steps[index]['am']!,
                               style: TextStyle(
                                 fontSize: 11,
-                                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
                                 color: isCurrent ? const Color(0xFF0C355B) : Colors.black87,
                               ),
                             ),
