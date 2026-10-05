@@ -1,0 +1,6 @@
+{
+  "name": "Gondar Traffic Bajaj Control System",
+  "description": "City Vehicle Authorization & Verification System for Gondar road traffic officers to inspect, verify, and regulate Bajaj three-wheelers with digital ID, QR scanner, and violation reporting.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
