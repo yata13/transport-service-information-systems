@@ -2,24 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/login_screen.dart';
+import 'services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // REPLACE WITH YOUR SUPABASE URL & ANON KEY
-  // Found in Supabase Dashboard -> Project Settings -> API
+  // Supabase Credentials
   const supabaseUrl = 'https://fvqmdcwvtreqkxsrgisi.supabase.co';
   const supabaseKey = 'sb_publishable_LwXB0Bn1J3QkmwZCinCWkQ_gfVyzdpz';
 
   try {
-    if (!supabaseUrl.contains('YOUR_SUPABASE')) {
+    if (!supabaseUrl.contains('YOUR_SUPABASE') && supabaseUrl.isNotEmpty) {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
       );
+      SupabaseService.isConfigured = true;
     }
   } catch (e) {
-    debugPrint('Supabase offline or not yet configured: $e');
+    debugPrint('Supabase offline or initialization error: $e');
   }
 
   runApp(const GondarTrafficApp());

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 class VerifyingProgressDialog extends StatefulWidget {
   final String queryValue;
@@ -89,7 +88,7 @@ class _VerifyingProgressDialogState extends State<VerifyingProgressDialog> {
                       ),
                     ],
                   ),
-                  child: const Icon(LucideIcons.scanLine, color: Colors.amber, size: 28),
+                  child: const Icon(Icons.qr_code_scanner, color: Colors.amber, size: 28),
                 ),
               ],
             ),
@@ -133,7 +132,7 @@ class _VerifyingProgressDialogState extends State<VerifyingProgressDialog> {
                         ),
                         child: Center(
                           child: isDone
-                              ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
+                              ? const Icon(Icons.check, size: 14, color: Colors.white)
                               : isCurrent
                                   ? const SizedBox(
                                       width: 10,

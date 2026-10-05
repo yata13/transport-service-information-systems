@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/bajaj_vehicle.dart';
 import 'vehicle_details_screen.dart';
 import 'violation_report_screen.dart';
@@ -18,7 +17,6 @@ class ValidityResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isValid = vehicle.status == 'ACTIVE';
     final isExpired = vehicle.status == 'EXPIRED';
-    final isIllegal = vehicle.status == 'ILLEGAL' || vehicle.status == 'SUSPENDED';
 
     final Color bannerColor = isValid
         ? const Color(0xFF15803D) // Emerald 700
@@ -68,10 +66,10 @@ class ValidityResultScreen extends StatelessWidget {
                       children: [
                         Icon(
                           isValid
-                              ? LucideIcons.checkCircle2
+                              ? Icons.check_circle
                               : isExpired
-                                  ? LucideIcons.alertTriangle
-                                  : LucideIcons.xCircle,
+                                  ? Icons.warning
+                                  : Icons.cancel,
                           color: Colors.white,
                           size: 52,
                         ),
@@ -115,14 +113,14 @@ class ValidityResultScreen extends StatelessWidget {
                                         width: 68,
                                         height: 68,
                                         color: Colors.grey.shade200,
-                                        child: const Icon(LucideIcons.user, size: 32, color: Colors.grey),
+                                        child: const Icon(Icons.person, size: 32, color: Colors.grey),
                                       ),
                                     )
                                   : Container(
                                       width: 68,
                                       height: 68,
                                       color: Colors.grey.shade200,
-                                      child: const Icon(LucideIcons.user, size: 32, color: Colors.grey),
+                                      child: const Icon(Icons.person, size: 32, color: Colors.grey),
                                     ),
                             ),
                             const SizedBox(width: 14),
@@ -184,7 +182,7 @@ class ValidityResultScreen extends StatelessWidget {
                                   children: [
                                     const Row(
                                       children: [
-                                        Icon(LucideIcons.phone, size: 12, color: Color(0xFF0C355B)),
+                                        Icon(Icons.phone, size: 12, color: Color(0xFF0C355B)),
                                         SizedBox(width: 4),
                                         Text('ስልክ (Phone)', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                       ],
@@ -211,7 +209,7 @@ class ValidityResultScreen extends StatelessWidget {
                                   children: [
                                     const Row(
                                       children: [
-                                        Icon(LucideIcons.mapPin, size: 12, color: Colors.red),
+                                        Icon(Icons.location_on, size: 12, color: Colors.red),
                                         SizedBox(width: 4),
                                         Text('ቀበሌ (Kebele)', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                       ],
@@ -249,7 +247,7 @@ class ValidityResultScreen extends StatelessWidget {
                               ),
                             );
                           },
-                          icon: const Icon(LucideIcons.fileText, size: 18),
+                          icon: const Icon(Icons.description, size: 18),
                           label: const Text('ተጨማሪ ዝርዝር እይ (View Full Details)'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0C355B),
@@ -264,7 +262,7 @@ class ValidityResultScreen extends StatelessWidget {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () => Navigator.pop(context),
-                                icon: const Icon(LucideIcons.refreshCw, size: 16),
+                                icon: const Icon(Icons.refresh, size: 16),
                                 label: const Text('አዲስ ፍተሻ'),
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(42),
@@ -283,7 +281,7 @@ class ValidityResultScreen extends StatelessWidget {
                                     ),
                                   );
                                 },
-                                icon: const Icon(LucideIcons.alertTriangle, size: 16, color: Colors.red),
+                                icon: const Icon(Icons.warning_amber, size: 16, color: Colors.red),
                                 label: const Text('የጥሰት ሪፖርት', style: TextStyle(color: Colors.red)),
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(color: Colors.red, width: 1.2),

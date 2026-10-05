@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/bajaj_vehicle.dart';
 import '../models/violation_report.dart';
 import '../services/supabase_service.dart';
@@ -120,7 +119,7 @@ class _ViolationReportScreenState extends State<ViolationReportScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 24),
+                  const Icon(Icons.warning, color: Colors.red, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -232,7 +231,7 @@ class _ViolationReportScreenState extends State<ViolationReportScreen> {
                     TextField(
                       controller: _locationController,
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(LucideIcons.mapPin, size: 18),
+                        prefixIcon: const Icon(Icons.location_on, size: 18),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       ),
@@ -276,7 +275,7 @@ class _ViolationReportScreenState extends State<ViolationReportScreen> {
             // Submit Button
             ElevatedButton.icon(
               onPressed: _isSubmitting ? null : _handleSubmit,
-              icon: const Icon(LucideIcons.send, size: 18),
+              icon: const Icon(Icons.send, size: 18),
               label: _isSubmitting
                   ? const SizedBox(
                       width: 18,

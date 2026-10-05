@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/bajaj_vehicle.dart';
 import '../services/supabase_service.dart';
 import 'validity_result_screen.dart';
@@ -91,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 const Row(
                   children: [
-                    Icon(LucideIcons.shieldCheck, color: Colors.amber, size: 28),
+                    Icon(Icons.verified_user, color: Colors.amber, size: 28),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -113,7 +112,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       widget.onNavigate!('verification');
                     }
                   },
-                  icon: const Icon(LucideIcons.scanLine, size: 18),
+                  icon: const Icon(Icons.qr_code_scanner, size: 18),
                   label: const Text('አዲስ ፍተሻ ጀምር (Start Verification)'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber.shade400,
@@ -135,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'የተመዘገቡ ባጃጆች',
                   value: '1,424',
                   subtitle: 'በጎንደር ከተማ መዝገብ',
-                  icon: LucideIcons.car,
+                  icon: Icons.directions_car,
                   color: const Color(0xFF0C355B),
                 ),
               ),
@@ -145,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'ሕጋዊ ፈቃድ ያላቸው',
                   value: '1,280',
                   subtitle: '89.8% የፀደቁ',
-                  icon: LucideIcons.checkCircle,
+                  icon: Icons.check_circle,
                   color: Colors.green.shade700,
                 ),
               ),
@@ -159,7 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'ጊዜው ያለፈበት',
                   value: '118',
                   subtitle: 'ማደስ የሚጠበቅባቸው',
-                  icon: LucideIcons.alertTriangle,
+                  icon: Icons.warning,
                   color: Colors.amber.shade800,
                 ),
               ),
@@ -169,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'የዛሬ ፍተሻዎች',
                   value: '284',
                   subtitle: 'በቼክፖይንት የተረጋገጡ',
-                  icon: LucideIcons.activity,
+                  icon: Icons.timeline,
                   color: Colors.blue.shade700,
                 ),
               ),
@@ -193,14 +192,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 leading: CircleAvatar(
                   backgroundColor: isActive ? Colors.green.shade100 : Colors.amber.shade100,
                   child: Icon(
-                    isActive ? LucideIcons.check : LucideIcons.alertTriangle,
+                    isActive ? Icons.check : Icons.warning,
                     color: isActive ? Colors.green.shade800 : Colors.amber.shade900,
                     size: 18,
                   ),
                 ),
                 title: Text(v.plateNumber, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 subtitle: Text('${v.driverName} · ${v.kebele}', style: const TextStyle(fontSize: 11)),
-                trailing: const Icon(LucideIcons.chevronRight, size: 18, color: Colors.grey),
+                trailing: const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
                 onTap: () {
                   Navigator.push(
                     context,

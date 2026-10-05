@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/bajaj_vehicle.dart';
 import '../widgets/pdf_permit_modal.dart';
 import 'violation_report_screen.dart';
@@ -75,14 +74,14 @@ class VehicleDetailsScreen extends StatelessWidget {
                                 width: 70,
                                 height: 70,
                                 color: Colors.grey.shade200,
-                                child: const Icon(LucideIcons.user, size: 30, color: Colors.grey),
+                                child: const Icon(Icons.person, size: 30, color: Colors.grey),
                               ),
                             )
                           : Container(
                               width: 70,
                               height: 70,
                               color: Colors.grey.shade200,
-                              child: const Icon(LucideIcons.user, size: 30, color: Colors.grey),
+                              child: const Icon(Icons.person, size: 30, color: Colors.grey),
                             ),
                     ),
                     const SizedBox(width: 14),
@@ -100,7 +99,7 @@ class VehicleDetailsScreen extends StatelessWidget {
                           // Plain text phone (non-clickable)
                           Row(
                             children: [
-                              const Icon(LucideIcons.phone, size: 12, color: Color(0xFF0C355B)),
+                              const Icon(Icons.phone, size: 12, color: Color(0xFF0C355B)),
                               const SizedBox(width: 4),
                               SelectableText(
                                 primaryPhone,
@@ -111,7 +110,7 @@ class VehicleDetailsScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(LucideIcons.mapPin, size: 12, color: Colors.red),
+                              const Icon(Icons.location_on, size: 12, color: Colors.red),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
@@ -195,7 +194,7 @@ class VehicleDetailsScreen extends StatelessWidget {
                         builder: (_) => PdfPermitModal(vehicle: vehicle),
                       );
                     },
-                    icon: const Icon(LucideIcons.fileText, size: 16),
+                    icon: const Icon(Icons.description, size: 16),
                     label: const Text('PDF ፈቃድ እይ'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0C355B),
@@ -216,7 +215,7 @@ class VehicleDetailsScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(LucideIcons.alertTriangle, size: 16),
+                    icon: const Icon(Icons.warning, size: 16),
                     label: const Text('የጥሰት ቅጣት ፃፍ'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red.shade700,

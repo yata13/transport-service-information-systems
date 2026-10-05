@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/bajaj_vehicle.dart';
 
@@ -26,7 +25,7 @@ class PdfPermitModal extends StatelessWidget {
                 children: [
                   const Row(
                     children: [
-                      Icon(LucideIcons.fileText, color: Color(0xFF0C355B), size: 20),
+                      Icon(Icons.description, color: Color(0xFF0C355B), size: 20),
                       SizedBox(width: 8),
                       Text(
                         'የዲጂታል ፈቃድ ሰነድ (PDF)',
@@ -35,7 +34,7 @@ class PdfPermitModal extends StatelessWidget {
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(LucideIcons.x, size: 20),
+                    icon: const Icon(Icons.close, size: 20),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -71,7 +70,7 @@ class PdfPermitModal extends StatelessWidget {
                             color: const Color(0xFF0C355B),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(LucideIcons.shield, color: Colors.amber, size: 18),
+                          child: const Icon(Icons.shield, color: Colors.amber, size: 18),
                         ),
                         const SizedBox(width: 10),
                         const Column(
@@ -172,7 +171,7 @@ class PdfPermitModal extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(LucideIcons.x, size: 16),
+                      icon: const Icon(Icons.close, size: 16),
                       label: const Text('ዝጋ (Close)'),
                     ),
                   ),
@@ -188,7 +187,7 @@ class PdfPermitModal extends StatelessWidget {
                         );
                         Navigator.pop(context);
                       },
-                      icon: const Icon(LucideIcons.printer, size: 16),
+                      icon: const Icon(Icons.print, size: 16),
                       label: const Text('አትም (Print/Save)'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0C355B),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onToggleDrawer;
@@ -41,7 +40,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            child: const Icon(LucideIcons.shieldCheck, color: Colors.amber, size: 22),
+            child: const Icon(Icons.verified_user, color: Colors.amber, size: 22),
           ),
           const SizedBox(width: 10),
 
@@ -77,7 +76,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         IconButton(
-          icon: const Icon(LucideIcons.menu, color: Colors.white, size: 24),
+          icon: const Icon(Icons.menu, color: Colors.white, size: 24),
           onPressed: onToggleDrawer,
           tooltip: 'የአሰሳ ማውጫ (Navigation Menu)',
         ),

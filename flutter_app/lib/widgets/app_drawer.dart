@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 class AppDrawer extends StatelessWidget {
   final String currentScreen;
@@ -121,10 +120,10 @@ class AppDrawer extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.amber.shade400, width: 1.5),
                         ),
-                        child: const Icon(LucideIcons.shieldCheck, color: Colors.amber, size: 26),
+                        child: const Icon(Icons.verified_user, color: Colors.amber, size: 26),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.x, color: Colors.white70, size: 20),
+                        icon: const Icon(Icons.close, color: Colors.white70, size: 20),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
@@ -220,35 +219,35 @@ class AppDrawer extends StatelessWidget {
                     id: 'verification',
                     labelAm: 'ማረጋገጫ',
                     labelEn: 'Verification & Scan',
-                    icon: LucideIcons.shieldCheck,
+                    icon: Icons.qr_code_scanner,
                   ),
                   _buildMenuItem(
                     context: context,
                     id: 'dashboard',
                     labelAm: 'መነሻ ገጽ',
                     labelEn: 'Dashboard & Stats',
-                    icon: LucideIcons.home,
+                    icon: Icons.dashboard,
                   ),
                   _buildMenuItem(
                     context: context,
                     id: 'vehicles',
                     labelAm: 'የባጃጅ መዝገብ',
                     labelEn: 'Vehicles Registry',
-                    icon: LucideIcons.car,
+                    icon: Icons.directions_car,
                   ),
                   _buildMenuItem(
                     context: context,
                     id: 'reports',
                     labelAm: 'የቅጣት ሪፖርቶች',
                     labelEn: 'Violation Reports',
-                    icon: LucideIcons.barChart2,
+                    icon: Icons.bar_chart,
                   ),
                   _buildMenuItem(
                     context: context,
                     id: 'settings',
                     labelAm: 'ቅንብሮች',
                     labelEn: 'Settings & Cloud Sync',
-                    icon: LucideIcons.settings,
+                    icon: Icons.settings,
                   ),
                 ],
               ),
@@ -262,7 +261,7 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                   onLogout();
                 },
-                icon: const Icon(LucideIcons.logOut, size: 18, color: Colors.redAccent),
+                icon: const Icon(Icons.logout, size: 18, color: Colors.redAccent),
                 label: const Text(
                   'ውጣ (Sign Out)',
                   style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),

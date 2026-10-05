@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/violation_report.dart';
 import '../services/supabase_service.dart';
 

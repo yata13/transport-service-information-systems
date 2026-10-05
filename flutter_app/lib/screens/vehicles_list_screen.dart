@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/bajaj_vehicle.dart';
 import '../services/supabase_service.dart';
 import 'validity_result_screen.dart';
@@ -66,10 +65,10 @@ class _VehiclesListScreenState extends State<VehiclesListScreen> {
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'በሰሌዳ፣ በስም ወይም በዲጂታል መታወቂያ ፈልግ...',
-                    prefixIcon: const Icon(LucideIcons.search, size: 18),
+                    prefixIcon: const Icon(Icons.search, size: 18),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(LucideIcons.x, size: 16),
+                            icon: const Icon(Icons.close, size: 16),
                             onPressed: () {
                               _searchController.clear();
                               setState(() {});
@@ -140,14 +139,14 @@ class _VehiclesListScreenState extends State<VehiclesListScreen> {
                                               width: 54,
                                               height: 54,
                                               color: Colors.grey.shade200,
-                                              child: const Icon(LucideIcons.user, color: Colors.grey),
+                                              child: const Icon(Icons.person, color: Colors.grey),
                                             ),
                                           )
                                         : Container(
                                             width: 54,
                                             height: 54,
                                             color: Colors.grey.shade200,
-                                            child: const Icon(LucideIcons.user, color: Colors.grey),
+                                            child: const Icon(Icons.person, color: Colors.grey),
                                           ),
                                   ),
                                   const SizedBox(width: 12),

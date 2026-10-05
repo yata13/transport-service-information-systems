@@ -8,23 +8,21 @@ class SupabaseService {
   static final List<BajajVehicle> _localVehicles = List.from(initialBajajDatabase);
   static final List<TrafficViolationReport> _localReports = List.from(initialReports);
 
+  static bool isConfigured = false;
+
   static SupabaseClient? get _client {
     try {
-      return Supabase.instance.client;
+      if (isConfigured) {
+        return Supabase.instance.client;
+      }
+      return null;
     } catch (_) {
       return null;
     }
   }
 
   /// Check if Supabase connection is active
-  static bool get isConnected {
-    try {
-      final client = _client;
-      return client != null && !client.supabaseUrl.contains('YOUR_SUPABASE');
-    } catch (_) {
-      return false;
-    }
-  }
+  static bool get isConnected => isConfigured && _client != null;
 
   /// Get all vehicles
   static Future<List<BajajVehicle>> getAllVehicles() async {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_service.dart';
 import 'app_shell.dart';
 
@@ -91,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(LucideIcons.shieldCheck, color: Colors.amber, size: 48),
+                      child: const Icon(Icons.verified_user, color: Colors.amber, size: 48),
                     ),
                   ],
                 ),
@@ -139,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Row(
                         children: [
-                          Icon(LucideIcons.lock, size: 18, color: Color(0xFF0C355B)),
+                          Icon(Icons.lock, size: 18, color: Color(0xFF0C355B)),
                           SizedBox(width: 8),
                           Text(
                             'የፍተሻ መኮንን መግቢያ (Officer Login)',
@@ -157,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _usernameController,
                         decoration: InputDecoration(
                           labelText: 'የተጠቃሚ ስም (Username)',
-                          prefixIcon: const Icon(LucideIcons.user, size: 20),
+                          prefixIcon: const Icon(Icons.person, size: 20),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           filled: true,
                           fillColor: const Color(0xFFF9FBFC),
@@ -170,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: true,
                         decoration: InputDecoration(
                           labelText: 'የይለፍ ቃል (Password)',
-                          prefixIcon: const Icon(LucideIcons.key, size: 20),
+                          prefixIcon: const Icon(Icons.vpn_key, size: 20),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           filled: true,
                           fillColor: const Color(0xFFF9FBFC),
@@ -231,12 +230,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         runSpacing: 8,
                         children: [
                           ActionChip(
-                            avatar: const Icon(LucideIcons.userCheck, size: 14, color: Color(0xFF0C355B)),
+                            avatar: const Icon(Icons.check_circle, size: 14, color: Color(0xFF0C355B)),
                             label: const Text('ኢንስፔክተር አበበ (Abebe)', style: TextStyle(fontSize: 11)),
                             onPressed: () => _fillDemo('inspector_abebe', 'gondar2025'),
                           ),
                           ActionChip(
-                            avatar: const Icon(LucideIcons.shield, size: 14, color: Color(0xFF0C355B)),
+                            avatar: const Icon(Icons.shield, size: 14, color: Color(0xFF0C355B)),
                             label: const Text('ረዳት ሰለሞን (Selemon)', style: TextStyle(fontSize: 11)),
                             onPressed: () => _fillDemo('inspector_selemon', 'gondar2025'),
                           ),

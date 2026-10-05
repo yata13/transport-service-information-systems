@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/supabase_service.dart';
 import '../models/bajaj_vehicle.dart';
@@ -169,7 +168,7 @@ class _VerificationScreenState extends State<VerificationScreen>
             ),
             child: const Row(
               children: [
-                Icon(LucideIcons.shieldCheck, color: Colors.amber, size: 32),
+                Icon(Icons.verified_user, color: Colors.amber, size: 32),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -275,14 +274,14 @@ class _VerificationScreenState extends State<VerificationScreen>
                               controller: _didController,
                               decoration: InputDecoration(
                                 hintText: 'DID-25-000784521',
-                                prefixIcon: const Icon(LucideIcons.scanLine),
+                                prefixIcon: const Icon(Icons.qr_code),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             ),
                             const SizedBox(height: 10),
                             ElevatedButton.icon(
                               onPressed: () => _runVerification(_didController.text, 'did'),
-                              icon: const Icon(LucideIcons.search, size: 18),
+                              icon: const Icon(Icons.search, size: 18),
                               label: const Text('አረጋግጥ (Verify ID)'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF0C355B),
@@ -299,7 +298,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                               onPressed: () {
                                 setState(() => _isScannerOpen = !_isScannerOpen);
                               },
-                              icon: Icon(_isScannerOpen ? LucideIcons.cameraOff : LucideIcons.camera, size: 18),
+                              icon: Icon(_isScannerOpen ? Icons.videocam_off : Icons.camera_alt, size: 18),
                               label: Text(_isScannerOpen ? 'ካሜራ ዝጋ (Close Camera)' : 'የካሜራ ስካነር ክፈት (Live QR Scan)'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF185A9D),
@@ -344,14 +343,14 @@ class _VerificationScreenState extends State<VerificationScreen>
                               controller: _plateController,
                               decoration: InputDecoration(
                                 hintText: 'ለምሳሌ፡ AA-12345 ወይም 3-AM-04891',
-                                prefixIcon: const Icon(LucideIcons.car),
+                                prefixIcon: const Icon(Icons.directions_car),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             ),
                             const SizedBox(height: 14),
                             ElevatedButton.icon(
                               onPressed: () => _runVerification(_plateController.text, 'plate'),
-                              icon: const Icon(LucideIcons.search, size: 18),
+                              icon: const Icon(Icons.search, size: 18),
                               label: const Text('በሰሌዳ ቁጥር ፈትሽ (Search Plate)'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF0C355B),
@@ -375,14 +374,14 @@ class _VerificationScreenState extends State<VerificationScreen>
                               controller: _vinController,
                               decoration: InputDecoration(
                                 hintText: 'MBN12345678912345',
-                                prefixIcon: const Icon(LucideIcons.binary),
+                                prefixIcon: const Icon(Icons.tag),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             ),
                             const SizedBox(height: 14),
                             ElevatedButton.icon(
                               onPressed: () => _runVerification(_vinController.text, 'vin'),
-                              icon: const Icon(LucideIcons.search, size: 18),
+                              icon: const Icon(Icons.search, size: 18),
                               label: const Text('በቻሲስ ፈትሽ (Search Chassis)'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF0C355B),

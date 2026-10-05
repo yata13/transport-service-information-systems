@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -44,7 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: const Color(0xFF0C355B),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(LucideIcons.userCheck, color: Colors.white, size: 28),
+                    child: const Icon(Icons.person, color: Colors.white, size: 28),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -93,9 +92,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Row(
                     children: [
                       Icon(
-                        isConnected ? LucideIcons.cloudCheck : LucideIcons.database,
+                        isConnected ? Icons.cloud_done : Icons.storage,
                         color: isConnected ? Colors.green : Colors.blue.shade800,
-                        size: 20,
+                        size: 24,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -156,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Sign Out Button
           OutlinedButton.icon(
             onPressed: widget.onLogout,
-            icon: const Icon(LucideIcons.logOut, size: 18, color: Colors.red),
+            icon: const Icon(Icons.logout, size: 18, color: Colors.red),
             label: const Text('ከመተግበሪያው ውጣ (Sign Out)', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.red, width: 1.2),
