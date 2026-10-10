@@ -159,6 +159,41 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             )}
           </button>
         </form>
+
+        {/* Quick 1-Click Demo Login */}
+        <div className="pt-3 border-t border-slate-100 mt-4 text-center">
+          <p className="text-[11px] font-semibold text-slate-500 mb-2">
+            ፈጣን የሙከራ መግቢያ (Quick 1-Click Demo Login):
+          </p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                onLoginSuccess({
+                  name: 'ኢንስፔክተር አበበ ተሰማ',
+                  badge: 'GD-TRF-042',
+                  role: 'Field Traffic Inspector',
+                });
+              }}
+              className="text-xs bg-blue-50 text-blue-800 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 font-medium transition cursor-pointer"
+            >
+              👮‍♂️ ኢንስፔክተር አበበ (Abebe)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onLoginSuccess({
+                  name: 'ረዳት ኢንስፔክተር ሰለሞን',
+                  badge: 'GD-TRF-019',
+                  role: 'Checkpoint Lead',
+                });
+              }}
+              className="text-xs bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-300 font-medium transition cursor-pointer"
+            >
+              🛡️ ረዳት ሰለሞን (Selemon)
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}

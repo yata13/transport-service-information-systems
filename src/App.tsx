@@ -22,8 +22,8 @@ export default function App() {
   const [database, setDatabase] = useState<BajajVehicle[]>(INITIAL_BAJAJ_DATABASE);
   const [reports, setReports] = useState<TrafficViolationReport[]>(INITIAL_REPORTS);
   
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [currentScreen, setCurrentScreen] = useState<NavScreen>('login');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  const [currentScreen, setCurrentScreen] = useState<NavScreen>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   const [currentUser, setCurrentUser] = useState({
@@ -37,7 +37,9 @@ export default function App() {
 
   // Active Verification state
   const [activeQuery, setActiveQuery] = useState<{
-    type: 'digitalId' | 'plate' | 'vin' | 'qr';
+    type: 'digitalId' | 'qr';
+    digitalId: string;
+    physicalPlate: string;
     value: string;
     simulatedBajaj?: BajajVehicle;
     isMismatch?: boolean;
@@ -45,13 +47,14 @@ export default function App() {
 
   const [selectedVehicle, setSelectedVehicle] = useState<BajajVehicle>(INITIAL_BAJAJ_DATABASE[0]);
   const [isMismatchFlag, setIsMismatchFlag] = useState<boolean>(false);
+  const [physicalPlateEntered, setPhysicalPlateEntered] = useState<string>('');
   const [showPdfModal, setShowPdfModal] = useState<boolean>(false);
 
   // Handlers
   const handleLoginSuccess = (user: { name: string; badge: string; role: string }) => {
     setCurrentUser(user);
     setIsLoggedIn(true);
-    setCurrentScreen('verification');
+    setCurrentScreen('dashboard');
   };
 
   const handleLogout = () => {
@@ -61,23 +64,22 @@ export default function App() {
   };
 
   const handleStartVerification = (query: {
-    type: 'digitalId' | 'plate' | 'vin' | 'qr';
+    type: 'digitalId' | 'qr';
+    digitalId: string;
+    physicalPlate: string;
     value: string;
     simulatedBajaj?: BajajVehicle;
     isMismatch?: boolean;
   }) => {
     setActiveQuery(query);
+    setPhysicalPlateEntered(query.physicalPlate);
     setCurrentScreen('progress');
   };
 
   const handleVerificationComplete = (bajaj: BajajVehicle, isMismatch: boolean) => {
     setSelectedVehicle(bajaj);
     setIsMismatchFlag(isMismatch);
-    if (isMismatch) {
-      setCurrentScreen('violationReport');
-    } else {
-      setCurrentScreen('validityResult');
-    }
+    setCurrentScreen('validityResult');
   };
 
   const handleSubmitViolationReport = (newReport: TrafficViolationReport) => {
@@ -97,11 +99,13 @@ export default function App() {
         sounds.enabled = val;
       }}
     >
-      {/* Top Application Bar (Shown on all screens, except during login when header is simplified) */}
+      {/* Top Application Bar */}
       <TopBar
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isSidebarOpen={isSidebarOpen}
         language={language}
+        currentScreen={currentScreen}
+        onNavigate={(screen) => setCurrentScreen(screen)}
       />
 
       {/* Sliding Navigation Drawer */}
@@ -131,6 +135,8 @@ export default function App() {
         ) : currentScreen === 'validityResult' ? (
           <ValidityResultScreen
             vehicle={selectedVehicle}
+            isClash={isMismatchFlag}
+            physicalPlateChecked={physicalPlateEntered}
             onViewDetails={() => setCurrentScreen('vehicleDetails')}
             onNewCheck={() => setCurrentScreen('verification')}
             onOpenReport={() => setCurrentScreen('violationReport')}
@@ -147,7 +153,7 @@ export default function App() {
           <ViolationReportScreen
             vehicle={selectedVehicle}
             isMismatch={isMismatchFlag}
-            onBack={() => setCurrentScreen(isMismatchFlag ? 'verification' : 'vehicleDetails')}
+            onBack={() => setCurrentScreen(isMismatchFlag ? 'validityResult' : 'vehicleDetails')}
             onSubmitReport={handleSubmitViolationReport}
             inspectorName={currentUser.name}
           />
@@ -158,6 +164,8 @@ export default function App() {
             onStartInspection={() => setCurrentScreen('verification')}
             onSelectVehicle={(bajaj) => {
               setSelectedVehicle(bajaj);
+              setIsMismatchFlag(false);
+              setPhysicalPlateEntered(bajaj.plateNumber);
               setCurrentScreen('validityResult');
             }}
           />
@@ -166,13 +174,18 @@ export default function App() {
             database={database}
             onSelectVehicle={(bajaj) => {
               setSelectedVehicle(bajaj);
+              setIsMismatchFlag(false);
+              setPhysicalPlateEntered(bajaj.plateNumber);
               setCurrentScreen('validityResult');
             }}
             onVerifyVehicle={(bajaj) => {
               handleStartVerification({
                 type: 'digitalId',
+                digitalId: bajaj.digitalId,
+                physicalPlate: bajaj.plateNumber,
                 value: bajaj.digitalId,
-                simulatedBajaj: bajaj
+                simulatedBajaj: bajaj,
+                isMismatch: false
               });
             }}
           />

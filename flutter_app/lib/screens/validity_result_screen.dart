@@ -66,17 +66,17 @@ class _ValidityResultScreenState extends State<ValidityResultScreen> {
                 : const Color(0xFFDC2626); // Red 600
 
     final String statusTextAm = isMismatch
-        ? 'አስጊ የሰሌዳ አለመዛመድ (PLATE MISMATCH)!'
+        ? '🚨 አስጊ የሰሌዳ ግጭት / አለመዛመድ (CLASH DETECTED!)'
         : isValid
-            ? 'ሕጋዊ ፈቃድ ያለው (VALID)'
+            ? '✅ ሰሌዳ እና ዲጂታል መታወቂያ 100% ተዛምደዋል (VALID)'
             : isExpired
                 ? 'ጊዜው ያለፈበት (EXPIRED)'
                 : 'ያልተፈቀደ / የታገደ (SUSPENDED)';
 
     final String statusDesc = isMismatch
-        ? 'በተሽከርካሪው ላይ የተለጠፈው ታርጋ ከመዝገቡ ጋር አይዛመድም! ፈቃዱ የሌላ ባጃጅ ነው'
+        ? 'በዲጂታል መታወቂያው የተመዘገበው ሰሌዳ እና በተሽከርካሪው ላይ ያለው ታርጋ የተለያዩ ናቸው! ፈቃዱ ተቀይሯል ወይም ተሰርቋል'
         : isValid
-            ? 'የመንገድ ፈቃዱ በጎንደር ከተማ አስተዳደር ትራፊክ ቁጥጥር የፀደቀ ነው'
+            ? 'በዲጂታል መታወቂያው እና በተሽከርካሪው ላይ ያለው ታርጋ ሙሉ ለሙሉ ይዛመዳሉ። የመንገድ ፈቃዱ የፀደቀ ነው።'
             : isExpired
                 ? 'የመንገድ ፈቃዱ ጊዜ ስላለፈበት ማደስ ይጠበቅበታል'
                 : 'ይህ ተሽከርካሪ በጎንደር መዝገብ ውስጥ ያልተፈቀደ ወይም የታገደ ነው';

@@ -7,6 +7,8 @@ interface VerifyingProgressModalProps {
   query: {
     type: 'digitalId' | 'plate' | 'vin' | 'qr';
     value: string;
+    digitalId?: string;
+    physicalPlate?: string;
     simulatedBajaj?: BajajVehicle;
     isMismatch?: boolean;
   };
