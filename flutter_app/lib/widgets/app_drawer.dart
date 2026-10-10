@@ -25,7 +25,7 @@ class AppDrawer extends StatelessWidget {
     required String labelEn,
     required IconData icon,
   }) {
-    final isSelected = currentScreen == id;
+    final isSelected = currentScreen == id || (id == 'story' && currentScreen == 'reports');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -39,7 +39,7 @@ class AppDrawer extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(10),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
                 Icon(
@@ -64,21 +64,12 @@ class AppDrawer extends StatelessWidget {
                         labelEn,
                         style: TextStyle(
                           fontSize: 10,
-                          color: isSelected ? Colors.blue.shade100 : Colors.blue.shade300,
+                          color: isSelected ? Colors.white70 : Colors.blue.shade200,
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (isSelected)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade400,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
               ],
             ),
           ),
@@ -90,20 +81,15 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: const Color(0xFF0A2E50),
+      backgroundColor: const Color(0xFF0C355B),
       child: SafeArea(
         child: Column(
           children: [
-            // Drawer Header
+            // Header with Emblem
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF0E3B68), Color(0xFF0A2E50)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                border: Border(bottom: BorderSide(color: Color(0xFF1E4B7A))),
+                border: Border(bottom: BorderSide(color: Color(0xFF164472), width: 1)),
               ),
               child: Column(
                 children: [
@@ -150,7 +136,7 @@ class AppDrawer extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'የጎንደር ከተማ አስተዳደር',
+                      'የጎንደር ከተማ አስተዳደር · የመስክ መተግበሪያ',
                       style: TextStyle(
                         fontSize: 10,
                         color: Colors.blue.shade200,
@@ -216,7 +202,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
 
-            // Navigation Items
+            // Navigation Items: Verification, Story, Settings
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -224,30 +210,16 @@ class AppDrawer extends StatelessWidget {
                   _buildMenuItem(
                     context: context,
                     id: 'verification',
-                    labelAm: 'ማረጋገጫ',
-                    labelEn: 'Verification & Scan',
+                    labelAm: 'የባጃጅ ፍተሻ',
+                    labelEn: 'Verification & Roadside Scan',
                     icon: Icons.qr_code_scanner,
                   ),
                   _buildMenuItem(
                     context: context,
-                    id: 'dashboard',
-                    labelAm: 'መነሻ ገጽ',
-                    labelEn: 'Dashboard & Stats',
-                    icon: Icons.dashboard,
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    id: 'vehicles',
-                    labelAm: 'የባጃጅ መዝገብ',
-                    labelEn: 'Vehicles Registry',
-                    icon: Icons.directions_car,
-                  ),
-                  _buildMenuItem(
-                    context: context,
-                    id: 'reports',
-                    labelAm: 'የቅጣት ሪፖርቶች',
-                    labelEn: 'Violation Reports',
-                    icon: Icons.bar_chart,
+                    id: 'story',
+                    labelAm: 'የፍተሻ ታሪክ / ጥሰቶች',
+                    labelEn: 'Inspection Story & Citations',
+                    icon: Icons.history,
                   ),
                   _buildMenuItem(
                     context: context,

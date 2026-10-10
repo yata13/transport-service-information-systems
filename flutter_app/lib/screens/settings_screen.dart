@@ -102,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isConnected ? 'ከSupabase ደመና ጋር ተገናኝቷል (Cloud Online)' : 'ከአካባቢያዊ ዳታቤዝ ጋር እየሰራ ነው (Local Offline Ready)',
+                              isConnected ? 'ከማዕከላዊ ዳታቤዝ ጋር ተገናኝቷል (Central Database Online)' : 'ከአካባቢያዊ ዳታቤዝ ጋር እየሰራ ነው (Local Offline Ready)',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 11,

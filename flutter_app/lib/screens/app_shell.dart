@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/app_drawer.dart';
-import 'dashboard_screen.dart';
 import 'verification_screen.dart';
-import 'vehicles_list_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
@@ -44,13 +42,8 @@ class _AppShellState extends State<AppShell> {
     Widget bodyContent;
 
     switch (_currentScreen) {
-      case 'dashboard':
-        bodyContent = DashboardScreen(onNavigate: _handleNavigate);
-        break;
-      case 'vehicles':
-        bodyContent = VehiclesListScreen(onNavigate: _handleNavigate);
-        break;
       case 'reports':
+      case 'story':
         bodyContent = const ReportsScreen();
         break;
       case 'settings':
@@ -64,6 +57,14 @@ class _AppShellState extends State<AppShell> {
       default:
         bodyContent = VerificationScreen(onNavigate: _handleNavigate);
         break;
+    }
+
+    // Determine active index for bottom navigation bar
+    int currentIndex = 0;
+    if (_currentScreen == 'reports' || _currentScreen == 'story') {
+      currentIndex = 1;
+    } else if (_currentScreen == 'settings') {
+      currentIndex = 2;
     }
 
     return Scaffold(
@@ -87,6 +88,37 @@ class _AppShellState extends State<AppShell> {
         officerRole: widget.officerRole,
       ),
       body: bodyContent,
+      // Dedicated Mobile Bottom Navigation Bar: Verification, Story, Settings
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: (index) {
+          if (index == 0) _handleNavigate('verification');
+          if (index == 1) _handleNavigate('story');
+          if (index == 2) _handleNavigate('settings');
+        },
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF0C355B),
+        unselectedItemColor: Colors.grey.shade500,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+        unselectedLabelStyle: const TextStyle(fontSize: 10),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.qr_code_scanner),
+            activeIcon: Icon(Icons.qr_code_scanner, color: Color(0xFF0C355B)),
+            label: 'ፍተሻ (Verify)',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            activeIcon: Icon(Icons.history, color: Color(0xFF0C355B)),
+            label: 'ታሪክ (Story)',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            activeIcon: Icon(Icons.settings, color: Color(0xFF0C355B)),
+            label: 'ቅንብሮች (Settings)',
+          ),
+        ],
+      ),
     );
   }
 }

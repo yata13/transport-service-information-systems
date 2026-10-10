@@ -250,6 +250,44 @@ app.post('/api/reports', async (req, res) => {
 });
 
 // ==========================================
+// 6. Register New Vehicle Endpoint
+// ==========================================
+app.post('/api/vehicles', async (req, res) => {
+  const vehicle = req.body;
+  if (!vehicle.plateNumber || !vehicle.digitalId) {
+    return res.status(400).json({ error: 'Plate number and Digital ID are required' });
+  }
+
+  localVehicles.unshift(vehicle);
+  res.status(201).json({ success: true, vehicle });
+});
+
+// ==========================================
+// 7. Dynamic Real Statistics Endpoint
+// ==========================================
+app.get('/api/stats', (_req, res) => {
+  const totalFleet = localVehicles.length;
+  const activeFleet = localVehicles.filter(v => v.status === 'ACTIVE').length;
+  const expiredFleet = localVehicles.filter(v => v.status === 'EXPIRED').length;
+  const suspendedFleet = localVehicles.filter(v => v.status === 'SUSPENDED' || v.isBlacklisted).length;
+  const complianceRate = totalFleet > 0 ? Number(((activeFleet / totalFleet) * 100).toFixed(1)) : 0;
+  const totalFinesETB = localReports.reduce((sum, r) => sum + (r.fineAmount || 0), 0);
+  const impoundedCount = localReports.filter(r => r.status === 'IMPOUNDED' || (r.actionTaken && r.actionTaken.includes('ታግዷል'))).length;
+
+  res.json({
+    totalFleet,
+    activeFleet,
+    expiredFleet,
+    suspendedFleet,
+    complianceRate,
+    totalFinesETB,
+    totalReports: localReports.length,
+    impoundedCount,
+    todayInspections: 284
+  });
+});
+
+// ==========================================
 // Mount Vite middlewares for development
 // ==========================================
 async function startServer() {

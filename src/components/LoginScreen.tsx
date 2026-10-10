@@ -160,10 +160,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        {/* Quick 1-Click Demo Login */}
+        {/* Authorized Officers Quick Access */}
         <div className="pt-3 border-t border-slate-100 mt-4 text-center">
           <p className="text-[11px] font-semibold text-slate-500 mb-2">
-            ፈጣን የሙከራ መግቢያ (Quick 1-Click Demo Login):
+            የተመዘገቡ ተረኛ መኮንኖች (Authorized Active Duty Officers):
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             <button

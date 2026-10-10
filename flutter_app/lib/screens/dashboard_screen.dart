@@ -188,7 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 6),
                         Text(
                           isOnline
-                              ? 'ከSupabase ደመና ጋር ተገናኝቷል ($totalVehicles ባጃጆች በመዝገብ)'
+                              ? 'ከማዕከላዊ ዳታቤዝ ጋር ተገናኝቷል ($totalVehicles ባጃጆች በመዝገብ)'
                               : 'ከአካባቢያዊ ዳታቤዝ ጋር እየሰራ ነው ($totalVehicles ባጃጆች)',
                           style: TextStyle(
                             color: isOnline ? Colors.greenAccent : Colors.amberAccent,

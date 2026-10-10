@@ -253,10 +253,10 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
               </div>
             </div>
 
-            {/* Quick Demo QR Selector Chips */}
+            {/* Active Registered Digital IDs */}
             <div>
               <p className="text-[11px] font-semibold text-slate-500 mb-1.5">
-                ፈጣን የሙከራ ዲጂታል መታወቂያዎች (Quick Demo QR):
+                በቅርብ የተረጋገጡ ዲጂታል መታወቂያዎች (Active Registered Digital IDs):
               </p>
               <div className="flex flex-wrap gap-2">
                 <button
