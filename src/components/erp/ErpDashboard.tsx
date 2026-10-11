@@ -18,6 +18,7 @@ import {
   Activity
 } from 'lucide-react';
 import { BajajVehicle, TrafficViolationReport } from '../../types';
+import { ErpCharts } from './ErpCharts';
 
 interface ErpDashboardProps {
   database: BajajVehicle[];
@@ -189,6 +190,14 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Enterprise Interactive Charts & Visual Graphs */}
+      <ErpCharts
+        totalFleet={totalFleet}
+        activeFleet={activeFleet}
+        expiredFleet={expiredFleet}
+        totalFinesETB={totalFinesETB}
+      />
 
       {/* Main ERP Layout: 2 Columns (Fleet Associations & Operational Feeds) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
