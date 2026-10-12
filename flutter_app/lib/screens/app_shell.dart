@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/app_drawer.dart';
@@ -5,6 +7,7 @@ import 'verification_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
+import '../services/supabase_service.dart';
 
 class AppShell extends StatefulWidget {
   final String officerName;
@@ -25,12 +28,27 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _currentScreen = 'verification';
+  Timer? _syncTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Upload anything recorded while the phone had no network.
+    _syncTimer = Timer.periodic(const Duration(minutes: 1), (_) => SupabaseService.flushOutbox());
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
+  }
 
   void _handleNavigate(String screen) {
     setState(() => _currentScreen = screen);
   }
 
   void _handleLogout() {
+    SupabaseService.logout();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),

@@ -11,22 +11,41 @@ interface VerificationScreenProps {
     physicalPlate: string;
     simulatedBajaj?: BajajVehicle;
     isMismatch?: boolean;
+    isNotFound?: boolean;
     value: string;
   }) => void;
   database: BajajVehicle[];
+  initialDigitalId?: string;
+}
+
+const normalize = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/** Accepts a raw DID, or a scanned QR payload like "DID|PLATE|PERMIT". */
+function findVehicle(database: BajajVehicle[], raw: string): BajajVehicle | undefined {
+  const value = raw.trim();
+  const did = value.split('|')[0].trim();
+  const key = normalize(did);
+  if (!key) return undefined;
+  return (
+    database.find((b) => normalize(b.digitalId) === key) ||
+    database.find((b) => b.qrCodeValue && b.qrCodeValue.trim().toUpperCase() === value.toUpperCase()) ||
+    database.find((b) => normalize(b.plateNumber) === key) ||
+    database.find((b) => normalize(b.vin) === key)
+  );
 }
 
 export const VerificationScreen: React.FC<VerificationScreenProps> = ({
   onStartVerification,
   database,
+  initialDigitalId,
 }) => {
   // Step 1: Scan Digital ID / QR
   // Step 2: Screen changes and asks for Plate Number Only!
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 
   // Step 1 State: Digital ID / QR
-  const [digitalIdInput, setDigitalIdInput] = useState('DID-25-000784521');
-  const [scannedDigitalId, setScannedDigitalId] = useState('DID-25-000784521');
+  const [digitalIdInput, setDigitalIdInput] = useState(initialDigitalId || '');
+  const [scannedDigitalId, setScannedDigitalId] = useState(initialDigitalId || '');
   const [matchedVehicle, setMatchedVehicle] = useState<BajajVehicle | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
@@ -41,7 +60,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
 
   // Generate dynamic QR code preview based on current Digital ID
   useEffect(() => {
-    const valueToEncode = digitalIdInput.trim() || 'DID-25-000784521';
+    const valueToEncode = digitalIdInput.trim() || 'GONDAR-TRAFFIC';
     QRCode.toDataURL(valueToEncode, {
       margin: 1,
       width: 220,
@@ -93,17 +112,13 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
     sounds.playScanBeep();
     stopCameraScan();
 
-    // Find in registry
-    const match = database.find(
-      (b) =>
-        b.digitalId.toLowerCase() === clean.toLowerCase() ||
-        b.qrCodeValue.toLowerCase().includes(clean.toLowerCase())
-    );
+    // Find in registry (no fallback: an unknown ID must stay unknown)
+    const match = findVehicle(database, clean);
 
-    setScannedDigitalId(clean);
-    setMatchedVehicle(match || database[0]);
-    // Pre-suggest matching plate for easy test, but allow changing
-    setPhysicalPlateInput(match ? match.plateNumber : '3-AM-04891');
+    setScannedDigitalId(match ? match.digitalId : clean.split('|')[0].trim());
+    setMatchedVehicle(match || null);
+    // The officer must type the plate they physically see on the vehicle.
+    setPhysicalPlateInput('');
     setStep2Error(null);
     setCurrentStep(2); // CHANGE PAGE TO STEP 2 (Plate Number Only)!
   };
@@ -118,20 +133,16 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
 
     sounds.playScanBeep();
 
-    const cleanInput = physicalPlateInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const registeredPlate = matchedVehicle
-      ? matchedVehicle.plateNumber.toUpperCase().replace(/[^A-Z0-9]/g, '')
-      : '';
-
     // Check if the physical plate entered matches the registered plate of that QR code!
-    const isClashOrMismatch = cleanInput !== registeredPlate;
+    const isClashOrMismatch = !!matchedVehicle && normalize(physicalPlateInput) !== normalize(matchedVehicle.plateNumber);
 
     onStartVerification({
       type: 'qr',
       digitalId: scannedDigitalId,
       physicalPlate: physicalPlateInput.trim().toUpperCase(),
-      simulatedBajaj: matchedVehicle || database[0],
+      simulatedBajaj: matchedVehicle || undefined,
       isMismatch: isClashOrMismatch,
+      isNotFound: !matchedVehicle,
       value: scannedDigitalId,
     });
   };
@@ -259,26 +270,20 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
                 በቅርብ የተረጋገጡ ዲጂታል መታወቂያዎች (Active Registered Digital IDs):
               </p>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDigitalIdInput('DID-25-000784521');
-                    proceedToStep2WithDigitalId('DID-25-000784521');
-                  }}
-                  className="text-xs bg-slate-100 hover:bg-blue-50 hover:border-blue-300 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 font-mono font-semibold transition"
-                >
-                  DID-25-000784521 (AA-12345)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDigitalIdInput('DID-GD-0489120');
-                    proceedToStep2WithDigitalId('DID-GD-0489120');
-                  }}
-                  className="text-xs bg-slate-100 hover:bg-blue-50 hover:border-blue-300 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 font-mono font-semibold transition"
-                >
-                  DID-GD-0489120 (3-AM-04891)
-                </button>
+                {database.length === 0 && <span className="text-[11px] text-slate-400">ምንም የተመዘገበ ባጃጅ የለም</span>}
+                {database.slice(0, 4).map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => {
+                      setDigitalIdInput(v.digitalId);
+                      proceedToStep2WithDigitalId(v.digitalId);
+                    }}
+                    className="text-xs bg-slate-100 hover:bg-blue-50 hover:border-blue-300 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 font-mono font-semibold transition"
+                  >
+                    {v.digitalId} ({v.plateNumber})
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -336,6 +341,13 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
             </div>
           </div>
 
+          {!matchedVehicle && (
+            <div className="p-2.5 bg-red-50 border border-red-300 rounded-lg text-xs text-red-700 font-bold flex items-center gap-2">
+              <ShieldAlert size={16} className="shrink-0" />
+              <span>ይህ መታወቂያ በመዝገቡ ውስጥ የለም (ID not found in registry) – ፍተሻው እንደ ሕገወጥ ይመዘገባል</span>
+            </div>
+          )}
+
           {step2Error && (
             <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 font-medium">
               {step2Error}
@@ -356,56 +368,6 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
                 className="w-full px-3.5 py-3 bg-slate-50 border-2 border-slate-300 rounded-xl text-base font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C355B] focus:bg-white transition uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-400"
                 autoFocus
               />
-            </div>
-
-            {/* Quick Fast-Testing Chips for Officer: MATCH vs CLASH */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold text-slate-500 block">
-                ፈጣን የፍተሻ ሙከራ (Test Match or Clash):
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {/* 1. MATCH BUTTON */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const matchPlate = matchedVehicle ? matchedVehicle.plateNumber : 'AA-12345';
-                    setPhysicalPlateInput(matchPlate);
-                  }}
-                  className="p-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-left transition"
-                >
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                    <CheckCircle2 size={14} />
-                    <span>ተዛማጅ ሰሌዳ (Match)</span>
-                  </div>
-                  <span className="text-[11px] font-mono font-semibold text-emerald-700 block mt-0.5">
-                    {matchedVehicle ? matchedVehicle.plateNumber : 'AA-12345'}
-                  </span>
-                </button>
-
-                {/* 2. CLASH / DIFFERENT BUTTON */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Set a plate DIFFERENT from the scanned one to trigger the clash!
-                    const clashPlate =
-                      matchedVehicle && matchedVehicle.plateNumber === 'AA-12345'
-                        ? '3-AM-04891'
-                        : 'AA-12345';
-                    setPhysicalPlateInput(clashPlate);
-                  }}
-                  className="p-2.5 bg-red-50 hover:bg-red-100 text-red-900 border border-red-300 rounded-xl text-left transition"
-                >
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-800">
-                    <ShieldAlert size={14} />
-                    <span>የተለየ ታርጋ (Clash Test)</span>
-                  </div>
-                  <span className="text-[11px] font-mono font-semibold text-red-700 block mt-0.5">
-                    {matchedVehicle && matchedVehicle.plateNumber === 'AA-12345'
-                      ? '3-AM-04891'
-                      : 'AA-12345'}
-                  </span>
-                </button>
-              </div>
             </div>
 
             {/* Action Buttons */}

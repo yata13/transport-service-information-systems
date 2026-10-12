@@ -26,27 +26,50 @@ class _VerificationScreenState extends State<VerificationScreen> {
   int _currentStep = 1;
 
   // Controllers
-  final _didController = TextEditingController(text: 'DID-25-000784521');
-  final _physicalPlateController = TextEditingController(text: 'AA-12345');
+  final _didController = TextEditingController();
+  final _physicalPlateController = TextEditingController();
 
-  String _scannedDigitalId = 'DID-25-000784521';
+  String _scannedDigitalId = '';
   BajajVehicle? _matchedVehicle;
   bool _isScannerOpen = false;
+  bool _isLookingUp = false;
+  List<BajajVehicle> _recentVehicles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    SupabaseService.getAllVehicles().then((list) {
+      if (mounted) setState(() => _recentVehicles = list.take(2).toList());
+    });
+  }
+
+  @override
+  void dispose() {
+    _didController.dispose();
+    _physicalPlateController.dispose();
+    super.dispose();
+  }
 
   void _goToStep2WithDigitalId(String did) async {
     final clean = did.trim();
-    if (clean.isEmpty) return;
+    // The scanner reports the same code on every camera frame: look up once.
+    if (clean.isEmpty || _isLookingUp) return;
+    _isLookingUp = true;
 
     setState(() {
       _isScannerOpen = false;
-      _scannedDigitalId = clean;
+      _scannedDigitalId = clean.split('|').first.trim();
     });
 
-    // Check in database to prepare matching plate
     final found = await SupabaseService.verifyVehicle(query: clean, type: 'did');
+    _isLookingUp = false;
+    if (!mounted) return;
     setState(() {
       _matchedVehicle = found;
-      _physicalPlateController.text = found != null ? found.plateNumber : '3-AM-04891';
+      if (found != null) _scannedDigitalId = found.digitalId;
+      // The officer must type the plate physically seen on the vehicle;
+      // pre-filling it would make every check pass.
+      _physicalPlateController.clear();
       _currentStep = 2; // CHANGE PAGE TO STEP 2 (Plate Number Only)!
     });
   }
@@ -78,6 +101,19 @@ class _VerificationScreenState extends State<VerificationScreen> {
               final regPlateNorm = vehicle.plateNumber.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
               final isClashOrMismatch = (inputPlateNorm != regPlateNorm);
 
+              SupabaseService.logInspection(
+                digitalId: vehicle.digitalId,
+                plateChecked: cleanPlate.toUpperCase(),
+                registeredPlate: vehicle.plateNumber,
+                result: isClashOrMismatch
+                    ? 'MISMATCH'
+                    : (vehicle.isBlacklisted || vehicle.status == 'SUSPENDED' || vehicle.status == 'ILLEGAL')
+                        ? 'SUSPENDED'
+                        : vehicle.status == 'EXPIRED'
+                            ? 'EXPIRED'
+                            : 'VALID',
+              );
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -91,6 +127,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
               );
             } else {
               // Not found
+              SupabaseService.logInspection(
+                digitalId: _scannedDigitalId,
+                plateChecked: cleanPlate.toUpperCase(),
+                result: 'NOT_FOUND',
+              );
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -249,7 +290,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                             onDetect: (capture) {
                               final barcodes = capture.barcodes;
                               for (final b in barcodes) {
-                                if (b.rawValue != null) {
+                                if (b.rawValue != null && !_isLookingUp) {
                                   _goToStep2WithDigitalId(b.rawValue!);
                                   break;
                                 }
@@ -272,43 +313,35 @@ class _VerificationScreenState extends State<VerificationScreen> {
                     TextField(
                       controller: _didController,
                       decoration: InputDecoration(
-                        hintText: 'ለምሳሌ፡ DID-25-000784521',
+                        hintText: 'ለምሳሌ፡ DID-GD-0489120',
                         prefixIcon: const Icon(Icons.qr_code_2),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
                     const SizedBox(height: 12),
 
-                    // Demo Buttons
-                    const Text(
-                      'ፈጣን የሙከራ ዲጂታል መታወቂያዎች (Demo QR):',
-                      style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              _didController.text = 'DID-25-000784521';
-                              _goToStep2WithDigitalId('DID-25-000784521');
-                            },
-                            child: const Text('DID-25 (AA-12345)', style: TextStyle(fontSize: 10)),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              _didController.text = 'DID-GD-0489120';
-                              _goToStep2WithDigitalId('DID-GD-0489120');
-                            },
-                            child: const Text('DID-GD (3-AM-04891)', style: TextStyle(fontSize: 10)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                    // Recently registered vehicles (from the live registry)
+                    if (_recentVehicles.isNotEmpty) ...[
+                      const Text(
+                        'በቅርብ የተመዘገቡ (Recently registered):',
+                        style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: _recentVehicles
+                            .map((v) => OutlinedButton(
+                                  onPressed: () {
+                                    _didController.text = v.digitalId;
+                                    _goToStep2WithDigitalId(v.digitalId);
+                                  },
+                                  child: Text('${v.digitalId} (${v.plateNumber})', style: const TextStyle(fontSize: 10)),
+                                ))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Step 1 Next Button
                     ElevatedButton.icon(
@@ -418,42 +451,22 @@ class _VerificationScreenState extends State<VerificationScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Quick Match vs Clash Test Buttons
-                    const Text(
-                      'የሙከራ አዝራሮች (Test Match vs Clash):',
-                      style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
-                    ),
+                    if (_matchedVehicle == null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade300),
+                        ),
+                        child: Text(
+                          'ይህ መታወቂያ በመዝገቡ ውስጥ የለም (ID not found in registry)',
+                          style: TextStyle(color: Colors.red.shade900, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        // Match button
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              final p = _matchedVehicle != null ? _matchedVehicle!.plateNumber : 'AA-12345';
-                              _physicalPlateController.text = p;
-                            },
-                            icon: const Icon(Icons.check, size: 14, color: Colors.green),
-                            label: const Text('ተዛማጅ ሰሌዳ (Match)', style: TextStyle(fontSize: 10, color: Colors.green)),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Clash button
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              final p = (_matchedVehicle != null && _matchedVehicle!.plateNumber == 'AA-12345')
-                                  ? '3-AM-04891'
-                                  : 'AA-12345';
-                              _physicalPlateController.text = p;
-                            },
-                            icon: const Icon(Icons.warning, size: 14, color: Colors.red),
-                            label: const Text('የተለየ ታርጋ (Clash)', style: TextStyle(fontSize: 10, color: Colors.red)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
 
                     // Final Inspection Button
                     ElevatedButton.icon(

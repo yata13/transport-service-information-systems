@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Search, 
   Car, 
@@ -23,6 +23,7 @@ interface VehiclesListScreenProps {
   onSelectVehicle: (bajaj: BajajVehicle) => void;
   onVerifyVehicle: (bajaj: BajajVehicle) => void;
   onOpenNewVehicleModal?: () => void;
+  initialSearch?: string;
 }
 
 export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
@@ -30,8 +31,14 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
   onSelectVehicle,
   onVerifyVehicle,
   onOpenNewVehicleModal,
+  initialSearch = '',
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+
+  // Follow the global search box in the top bar.
+  useEffect(() => {
+    setSearchTerm(initialSearch);
+  }, [initialSearch]);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'SUSPENDED'>('ALL');
   const [filterAssociation, setFilterAssociation] = useState<string>('ALL');
 

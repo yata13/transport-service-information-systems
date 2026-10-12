@@ -1,6 +1,8 @@
 -- ====================================================================
 -- GONDAR CITY TRAFFIC POLICE - SUPABASE POSTGRESQL SCHEMA & SEED
 -- Paste this script directly into Supabase Dashboard -> SQL Editor -> Run
+-- THEN run supabase/migrations/20261012000000_shared_realtime_backend.sql
+-- (realtime sync with the ERP website + secure hashed login).
 -- ====================================================================
 
 -- 1. Create bajaj_vehicles table

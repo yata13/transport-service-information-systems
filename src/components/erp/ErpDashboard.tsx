@@ -17,12 +17,13 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
-import { BajajVehicle, TrafficViolationReport } from '../../types';
+import { BajajVehicle, Inspection, TrafficViolationReport } from '../../types';
 import { ErpCharts } from './ErpCharts';
 
 interface ErpDashboardProps {
   database: BajajVehicle[];
   reports: TrafficViolationReport[];
+  inspections: Inspection[];
   onNavigateTab: (tab: string) => void;
   onOpenNewVehicleModal: () => void;
   onSelectVehicle: (vehicle: BajajVehicle) => void;
@@ -31,6 +32,7 @@ interface ErpDashboardProps {
 export const ErpDashboard: React.FC<ErpDashboardProps> = ({
   database,
   reports,
+  inspections,
   onNavigateTab,
   onOpenNewVehicleModal,
   onSelectVehicle,
@@ -44,16 +46,40 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
   const totalFinesETB = reports.reduce((sum, r) => sum + (r.fineAmount || 0), 0);
   const impoundedTickets = reports.filter((r) => r.status === 'IMPOUNDED' || r.actionTaken.includes('ታግዷል')).length;
 
-  // Association statistics
-  const associations = [
-    { name: 'ፋሲል የባጃጅ ማህበር (Fasil)', zone: 'ዞን 1 (አራዳ/ፒያሳ)', color: 'bg-blue-600', count: database.filter(v => v.bajajAssociation.includes('ፋሲል')).length || 1 },
-    { name: 'አዘዞ ማህበር (Azezo)', zone: 'ዞን 2 (አዘዞ/ኤርፖርት)', color: 'bg-emerald-600', count: database.filter(v => v.bajajAssociation.includes('አዘዞ')).length || 1 },
-    { name: 'ማራኪ ዩኒቨርሲቲ ማህበር (Maraki)', zone: 'ዞን 3 (ማራኪ/ቀበሌ 18)', color: 'bg-amber-600', count: database.filter(v => v.bajajAssociation.includes('ማራኪ')).length || 1 },
-    { name: 'አንገረብ ማህበር (Angereb)', zone: 'ዞን 4 (ቸቸላ/አንገረብ)', color: 'bg-purple-600', count: database.filter(v => v.bajajAssociation.includes('አንገረብ')).length || 1 },
-  ];
+  const todayKey = new Date().toDateString();
+  const todayInspections = inspections.filter((i) => new Date(i.createdAt).toDateString() === todayKey);
+  const todayFailed = todayInspections.filter((i) => i.result !== 'VALID').length;
+
+  // Association statistics (real counts from the registry)
+  const assocColors = ['bg-blue-600', 'bg-emerald-600', 'bg-amber-600', 'bg-purple-600', 'bg-sky-600', 'bg-rose-600'];
+  const assocMap = new Map<string, { count: number; active: number }>();
+  for (const v of database) {
+    const name = v.bajajAssociation || 'ሌሎች (Other)';
+    const entry = assocMap.get(name) || { count: 0, active: 0 };
+    entry.count += 1;
+    if (v.status === 'ACTIVE') entry.active += 1;
+    assocMap.set(name, entry);
+  }
+  const associations = [...assocMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 6)
+    .map(([name, data], idx) => ({ name, ...data, color: assocColors[idx % assocColors.length] }));
+
+  // Officers working in the field today, derived from their inspections
+  const officerActivity = new Map<string, { badge: string; count: number; last: string; location: string }>();
+  for (const i of todayInspections) {
+    const entry = officerActivity.get(i.officerName) || { badge: i.badgeNumber, count: 0, last: i.createdAt, location: i.location };
+    entry.count += 1;
+    if (i.createdAt > entry.last) {
+      entry.last = i.createdAt;
+      entry.location = i.location;
+    }
+    officerActivity.set(i.officerName, entry);
+  }
+  const activeOfficers = [...officerActivity.entries()].sort((a, b) => b[1].last.localeCompare(a[1].last)).slice(0, 5);
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Executive Command Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
@@ -71,7 +97,7 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
         </div>
 
         {/* Header Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => onNavigateTab('verification')}
             className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
@@ -182,22 +208,17 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
             </div>
           </div>
           <div className="mt-2 text-2xl font-black text-sky-800 font-mono">
-            284
+            {todayInspections.length.toLocaleString()}
           </div>
           <div className="mt-1 text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            <span>በቀጥታ በመስክ ላይ</span>
+            <span>{todayFailed} ችግር ያለባቸው · በቀጥታ</span>
           </div>
         </div>
       </div>
 
       {/* Enterprise Interactive Charts & Visual Graphs */}
-      <ErpCharts
-        totalFleet={totalFleet}
-        activeFleet={activeFleet}
-        expiredFleet={expiredFleet}
-        totalFinesETB={totalFinesETB}
-      />
+      <ErpCharts vehicles={database} reports={reports} inspections={inspections} />
 
       {/* Main ERP Layout: 2 Columns (Fleet Associations & Operational Feeds) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -302,7 +323,10 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
             </div>
 
             <div className="divide-y divide-slate-100 text-xs">
-              {reports.slice(0, 3).map((r) => (
+              {reports.length === 0 && (
+                <div className="p-6 text-center text-slate-400">ገና ምንም ሪፖርት የለም (No reports yet)</div>
+              )}
+              {reports.slice(0, 5).map((r) => (
                 <div key={r.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50 transition">
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center shrink-0 font-bold text-[10px]">
@@ -314,7 +338,7 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
                         <span className="text-[10px] text-slate-400 font-mono">#{r.reportNumber}</span>
                       </div>
                       <div className="text-[11px] text-slate-700 font-medium mt-0.5">{r.reasonAm || r.reason}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{r.location} · {r.checkedBy}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{r.location} · {r.checkedBy} · {r.checkedOn}</div>
                     </div>
                   </div>
 
@@ -342,13 +366,14 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
             </div>
 
             <div className="space-y-4">
-              {associations.map((assoc, idx) => {
-                const percentage = Math.max(15, Math.min(85, (assoc.count / totalFleet) * 100 + idx * 12));
+              {associations.length === 0 && <p className="text-xs text-slate-400">ምንም መረጃ የለም</p>}
+              {associations.map((assoc) => {
+                const percentage = totalFleet > 0 ? (assoc.count / totalFleet) * 100 : 0;
                 return (
                   <div key={assoc.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-800">{assoc.name}</span>
-                      <span className="font-mono text-slate-600">{percentage.toFixed(0)}%</span>
+                    <div className="flex items-center justify-between text-xs font-semibold gap-2">
+                      <span className="text-slate-800 truncate">{assoc.name}</span>
+                      <span className="font-mono text-slate-600 shrink-0">{percentage.toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                       <div
@@ -357,11 +382,8 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
                       />
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <MapPin size={10} />
-                        {assoc.zone}
-                      </span>
-                      <span>ፈቃድ ተሰጥቷል</span>
+                      <span>{assoc.count} ባጃጆች</span>
+                      <span>{assoc.active} ሕጋዊ ፈቃድ</span>
                     </div>
                   </div>
                 );
@@ -369,45 +391,32 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
             </div>
           </div>
 
-          {/* City Zones Deployment Terminal */}
+          {/* Officers active in the field today (from live inspections) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
               <MapPin size={18} className="text-blue-600" />
               <h3 className="text-sm font-bold text-slate-900">
-                የጎንደር ከተማ የፍተሻ ኬላዎች (Checkpoints)
+                የዛሬ ተረኛ መኮንኖች (Officers Active Today)
               </h3>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-slate-900">ኬላ 01: ፒያሳ - ፋሲል ግቢ</div>
-                  <div className="text-[10px] text-slate-500">ተረኛ፡ ኢንስፔክተር አበበ ተሰማ</div>
+              {activeOfficers.length === 0 && (
+                <p className="text-slate-400">ዛሬ ገና ምንም ፍተሻ አልተደረገም (No inspections yet today)</p>
+              )}
+              {activeOfficers.map(([name, info]) => (
+                <div key={name} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-bold text-slate-900 truncate">{name}</div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      {info.badge} · {info.location || '-'} · {new Date(info.last).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                    {info.count} ፍተሻ
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  ንቁ (Active)
-                </span>
-              </div>
-
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-slate-900">ኬላ 02: አዘዞ ማዞሪያ - ኤርፖርት</div>
-                  <div className="text-[10px] text-slate-500">ተረኛ፡ ረዳት ኢንስፔክተር ሰለሞን</div>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  ንቁ (Active)
-                </span>
-              </div>
-
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-slate-900">ኬላ 03: ማራኪ ዩኒቨርሲቲ በር</div>
-                  <div className="text-[10px] text-slate-500">ተረኛ፡ ሳጅን ተስፋዬ ብርሃኑ</div>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  ንቁ (Active)
-                </span>
-              </div>
+              ))}
             </div>
           </div>
         </div>

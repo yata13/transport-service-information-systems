@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  web:
+    name: Website (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run build
+
+  mobile:
+    name: Mobile app (analyze + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  database:
+    name: Database schema + migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply schema and migrations (twice, to prove they are re-runnable)
+        run: |
+          set -e
+          PSQL="psql -v ON_ERROR_STOP=1 -q"
+          $PSQL -f supabase/ci/supabase_stubs.sql
+          $PSQL -f flutter_app/supabase_schema.sql
+          for f in supabase/migrations/*.sql; do $PSQL -f "$f"; $PSQL -f "$f"; done
+      - name: Verify behaviour
+        run: psql -v ON_ERROR_STOP=1 -f supabase/ci/verify.sql

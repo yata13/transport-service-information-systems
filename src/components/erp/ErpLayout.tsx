@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, 
   Car, 
@@ -18,6 +18,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { ShieldLogo } from '../ShieldLogo';
+import { SessionUser, SyncStatus } from '../../types';
 
 interface ErpLayoutProps {
   currentTab: string;
@@ -25,13 +26,13 @@ interface ErpLayoutProps {
   onLogout: () => void;
   onOpenNewVehicleModal: () => void;
   onGlobalSearch?: (term: string) => void;
-  currentUser: {
-    name: string;
-    badge: string;
-    role: string;
-  };
+  currentUser: SessionUser;
+  syncStatus: SyncStatus;
+  lastSync: Date | null;
   children: React.ReactNode;
 }
+
+const isSmallScreen = () => typeof window !== 'undefined' && window.innerWidth < 1024;
 
 export const ErpLayout: React.FC<ErpLayoutProps> = ({
   currentTab,
@@ -40,10 +41,33 @@ export const ErpLayout: React.FC<ErpLayoutProps> = ({
   onOpenNewVehicleModal,
   onGlobalSearch,
   currentUser,
+  syncStatus,
+  lastSync,
   children,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isSmallScreen());
+  const [isMobile, setIsMobile] = useState(isSmallScreen);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(isSmallScreen());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const handleSelect = (tab: string) => {
+    onSelectTab(tab);
+    if (isMobile) setIsSidebarOpen(false);
+  };
+
+  const syncBadge =
+    syncStatus === 'live'
+      ? { cls: 'bg-emerald-50 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500 animate-pulse', label: 'በቀጥታ ተገናኝቷል (Live Sync)' }
+      : syncStatus === 'polling'
+        ? { cls: 'bg-sky-50 text-sky-800 border-sky-200', dot: 'bg-sky-500', label: 'ተመሳስሏል (Synced · auto-refresh)' }
+      : syncStatus === 'connecting'
+        ? { cls: 'bg-amber-50 text-amber-800 border-amber-200', dot: 'bg-amber-500 animate-pulse', label: 'በማገናኘት ላይ... (Connecting)' }
+        : { cls: 'bg-red-50 text-red-800 border-red-200', dot: 'bg-red-500', label: 'ከመስመር ውጭ (Offline)' };
 
   const menuSections = [
     {
@@ -81,7 +105,7 @@ export const ErpLayout: React.FC<ErpLayoutProps> = ({
       {/* ERP Collapsible Left Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 bg-[#0C355B] text-white flex flex-col transition-all duration-300 ${
-          isSidebarOpen ? 'w-64' : 'w-20'
+          isSidebarOpen ? 'w-64' : isMobile ? 'w-64 -translate-x-full' : 'w-20'
         } shrink-0 shadow-2xl`}
       >
         {/* Sidebar Header Brand */}
@@ -123,7 +147,7 @@ export const ErpLayout: React.FC<ErpLayoutProps> = ({
                 return (
                   <button
                     key={item.id}
-                    onClick={() => onSelectTab(item.id)}
+                    onClick={() => handleSelect(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                       isActive
                         ? 'bg-blue-600 text-white font-bold shadow-sm'
@@ -168,12 +192,30 @@ export const ErpLayout: React.FC<ErpLayoutProps> = ({
         </div>
       </aside>
 
+      {/* Mobile backdrop */}
+      {isMobile && isSidebarOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40" onClick={() => setIsSidebarOpen(false)} />
+      )}
+
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      <div
+        className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${
+          isMobile ? 'ml-0' : isSidebarOpen ? 'ml-64' : 'ml-20'
+        }`}
+      >
         {/* Top ERP Command Bar */}
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 px-6 py-3 flex items-center justify-between shadow-2xs">
+        <header className="sticky top-0 z-20 bg-white border-b border-slate-200/80 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 shadow-2xs">
+          {isMobile && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 rounded-lg text-[#0C355B] hover:bg-slate-100 shrink-0"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+          )}
           {/* Global Search Bar */}
-          <div className="flex-1 max-w-lg">
+          <div className="flex-1 max-w-lg min-w-0">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                 <Search size={16} />
@@ -192,11 +234,14 @@ export const ErpLayout: React.FC<ErpLayoutProps> = ({
           </div>
 
           {/* Right Header Status Badges & Quick Action */}
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
             {/* Live Database Sync Badge */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>ከማዕከላዊ ዳታቤዝ ጋር ተገናኝቷል (DB Sync Online)</span>
+            <div
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-[11px] font-semibold ${syncBadge.cls}`}
+              title={lastSync ? `Last update: ${lastSync.toLocaleTimeString()}` : undefined}
+            >
+              <span className={`w-2 h-2 rounded-full ${syncBadge.dot}`} />
+              <span className="hidden sm:inline">{syncBadge.label}</span>
             </div>
 
             {/* Quick Register Vehicle Button */}

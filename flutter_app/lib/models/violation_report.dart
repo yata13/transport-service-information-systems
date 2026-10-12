@@ -14,6 +14,9 @@ class TrafficViolationReport {
   final String status; // 'SUBMITTED' | 'PAID' | 'IMPOUNDED' | 'RESOLVED'
   final String location;
 
+  /// True while the report is stored on the phone waiting for network.
+  final bool isPending;
+
   TrafficViolationReport({
     required this.id,
     required this.reportNumber,
@@ -29,7 +32,17 @@ class TrafficViolationReport {
     required this.notes,
     required this.status,
     required this.location,
+    this.isPending = false,
   });
+
+  /// Human friendly local time, e.g. "2026-10-12 09:41".
+  String get checkedOnDisplay {
+    final d = DateTime.tryParse(checkedOn);
+    if (d == null) return checkedOn;
+    final l = d.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
+  }
 
   factory TrafficViolationReport.fromJson(Map<String, dynamic> json) {
     return TrafficViolationReport(
@@ -41,12 +54,13 @@ class TrafficViolationReport {
       reason: json['reason'] ?? '',
       reasonAm: json['reason_am'] ?? json['reasonAm'] ?? '',
       actionTaken: json['action_taken'] ?? json['actionTaken'] ?? '',
-      fineAmount: (json['fine_amount'] ?? json['fineAmount'] ?? 0).toDouble(),
-      checkedOn: (json['checked_on'] ?? json['checkedOn'] ?? '').toString(),
+      fineAmount: num.tryParse((json['fine_amount'] ?? json['fineAmount'] ?? 0).toString())?.toDouble() ?? 0,
+      checkedOn: (json['checked_on'] ?? json['created_at'] ?? json['checkedOn'] ?? '').toString(),
       checkedBy: json['checked_by'] ?? json['checkedBy'] ?? '',
       notes: json['notes'] ?? '',
       status: json['status'] ?? 'SUBMITTED',
       location: json['location'] ?? '',
+      isPending: json['pending'] == true,
     );
   }
 
@@ -60,6 +74,7 @@ class TrafficViolationReport {
       'reason_am': reasonAm,
       'action_taken': actionTaken,
       'fine_amount': fineAmount,
+      'checked_on': DateTime.tryParse(checkedOn)?.toUtc().toIso8601String() ?? DateTime.now().toUtc().toIso8601String(),
       'checked_by': checkedBy,
       'notes': notes,
       'status': status,
@@ -67,38 +82,3 @@ class TrafficViolationReport {
     };
   }
 }
-
-final List<TrafficViolationReport> initialReports = [
-  TrafficViolationReport(
-    id: 'rep-1',
-    reportNumber: 'RPT-GD-2025-091',
-    digitalId: 'DID-25-000784521',
-    vehiclePlate: 'AA-99999',
-    registeredPlate: 'AA-12345',
-    reason: 'Plate number does not match with registered vehicle.',
-    reasonAm: 'የተሰቀለው የሰሌዳ ቁጥር ከተመዘገበው ጋር አይዛመድም (ሐሰተኛ ሰሌዳ)',
-    actionTaken: 'ባጃጅ ወደ ጎንደር ትራፊክ መምሪያ እንዲቆም ተደርጓል (Impounded)',
-    fineAmount: 2000,
-    checkedOn: '2025-05-20 10:32:18',
-    checkedBy: 'ኢንስፔክተር አበበ ተሰማ',
-    notes: 'ተሽከርካሪው በፒያሳ አደባባይ ሲያሽከረክር ተይዟል:: የሰሌዳ ማጭበርበር ተረጋግጧል::',
-    status: 'IMPOUNDED',
-    location: 'ጎንደር ፒያሳ አደባባይ (Piassa Square)',
-  ),
-  TrafficViolationReport(
-    id: 'rep-2',
-    reportNumber: 'RPT-GD-2025-084',
-    digitalId: 'DID-GD-0899211',
-    vehiclePlate: '3-AM-99999',
-    registeredPlate: '3-AM-99999',
-    reason: 'Transport service operating with expired annual permit.',
-    reasonAm: 'የአመቱ የስራ ፈቃድ ጊዜው ያለፈበት ሆኖ ሲያጓጉዝ ተገኝቷል',
-    actionTaken: 'የትራፊክ ቅጣት 1,000 ብር ተጥሏል (Traffic Ticket)',
-    fineAmount: 1000,
-    checkedOn: '2025-05-18 14:15:00',
-    checkedBy: 'ረዳት ኢንስፔክተር ሰለሞን አለሙ',
-    notes: 'ባለቤቱ በ3 ቀን ውስጥ ፈቃድ እንዲያድስ ማስጠንቀቂያ ተሰጥቷል::',
-    status: 'SUBMITTED',
-    location: 'አዘዞ ማዞሪያ (Azezo Junction)',
-  ),
-];

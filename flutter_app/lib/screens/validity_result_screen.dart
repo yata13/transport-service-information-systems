@@ -423,7 +423,10 @@ class _ValidityResultScreenState extends State<ValidityResultScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => ViolationReportScreen(vehicle: widget.vehicle),
+                                  builder: (_) => ViolationReportScreen(
+                                    vehicle: widget.vehicle,
+                                    physicalPlate: _hasCheckedTarga ? _checkedTarga : null,
+                                  ),
                                 ),
                               );
                             },
@@ -478,7 +481,10 @@ class _ValidityResultScreenState extends State<ValidityResultScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => ViolationReportScreen(vehicle: widget.vehicle),
+                                      builder: (_) => ViolationReportScreen(
+                                        vehicle: widget.vehicle,
+                                        physicalPlate: _hasCheckedTarga ? _checkedTarga : null,
+                                      ),
                                     ),
                                   );
                                 },
