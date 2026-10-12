@@ -12,6 +12,17 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Enable CORS for web clients and mobile app clients
+app.use((_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (_req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // In-memory fallback state if MySQL is not yet spun up by user
 let localVehicles = [...INITIAL_BAJAJ_DATABASE];
 let localReports = [...INITIAL_REPORTS];
@@ -284,6 +295,67 @@ app.get('/api/stats', (_req, res) => {
     totalReports: localReports.length,
     impoundedCount,
     todayInspections: 284
+  });
+});
+
+// ==========================================
+// 8. Live Real-time Dashboard Aggregations
+// ==========================================
+app.get('/api/dashboard/live', (_req, res) => {
+  const totalFleet = localVehicles.length;
+  const activeFleet = localVehicles.filter(v => v.status === 'ACTIVE').length;
+  const expiredFleet = localVehicles.filter(v => v.status === 'EXPIRED').length;
+  const suspendedFleet = localVehicles.filter(v => v.status === 'SUSPENDED' || v.isBlacklisted).length;
+  const complianceRate = totalFleet > 0 ? Number(((activeFleet / totalFleet) * 100).toFixed(1)) : 0;
+  const totalFinesETB = localReports.reduce((sum, r) => sum + (r.fineAmount || 0), 0);
+  const impoundedCount = localReports.filter(r => r.status === 'IMPOUNDED' || (r.actionTaken && r.actionTaken.includes('ታግዷል'))).length;
+
+  // Real Association Distribution
+  const assocMap: Record<string, number> = {};
+  for (const v of localVehicles) {
+    const name = v.bajajAssociation || 'ሌሎች (Other)';
+    assocMap[name] = (assocMap[name] || 0) + 1;
+  }
+  const associations = Object.entries(assocMap).map(([name, count]) => ({
+    name,
+    count,
+    share: totalFleet > 0 ? Number(((count / totalFleet) * 100).toFixed(1)) : 0
+  })).sort((a, b) => b.count - a.count);
+
+  // Real Zone Distribution
+  const zoneMap: Record<string, { total: number; active: number; expired: number }> = {};
+  for (const v of localVehicles) {
+    const zone = v.authorizedArea || 'ያልተመደበ (Unassigned)';
+    if (!zoneMap[zone]) {
+      zoneMap[zone] = { total: 0, active: 0, expired: 0 };
+    }
+    zoneMap[zone].total += 1;
+    if (v.status === 'ACTIVE') zoneMap[zone].active += 1;
+    if (v.status === 'EXPIRED') zoneMap[zone].expired += 1;
+  }
+  const zones = Object.entries(zoneMap).map(([zone, data]) => ({
+    zone,
+    ...data,
+    percent: totalFleet > 0 ? Math.round((data.total / totalFleet) * 100) : 0
+  })).sort((a, b) => b.total - a.total);
+
+  res.json({
+    timestamp: new Date().toISOString(),
+    stats: {
+      totalFleet,
+      activeFleet,
+      expiredFleet,
+      suspendedFleet,
+      complianceRate,
+      totalFinesETB,
+      totalReports: localReports.length,
+      impoundedCount,
+      todayInspections: 284 + localReports.length
+    },
+    associations,
+    zones,
+    vehicles: localVehicles,
+    reports: localReports
   });
 });
 
