@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/violation_report.dart';
 import '../services/supabase_service.dart';
@@ -12,14 +14,37 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   List<TrafficViolationReport> _reports = [];
   bool _isLoading = true;
+  StreamSubscription<List<TrafficViolationReport>>? _subscription;
 
   @override
   void initState() {
     super.initState();
     _loadReports();
+    _listenLive();
   }
 
-  void _loadReports() async {
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  /// Realtime: reports from every phone and the ERP appear without refreshing.
+  void _listenLive() {
+    _subscription = SupabaseService.reportsStream().listen(
+      (list) {
+        if (mounted) {
+          setState(() {
+            _reports = list;
+            _isLoading = false;
+          });
+        }
+      },
+      onError: (Object e) => debugPrint('Reports realtime error: $e'),
+    );
+  }
+
+  Future<void> _loadReports() async {
     final list = await SupabaseService.getAllReports();
     if (mounted) {
       setState(() {
@@ -39,7 +64,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF0C355B)))
           : RefreshIndicator(
-              onRefresh: () async => _loadReports(),
+              onRefresh: _loadReports,
               color: const Color(0xFF0C355B),
               child: ListView(
                 padding: const EdgeInsets.all(14.0),
@@ -92,6 +117,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   const SizedBox(height: 8),
 
+                  if (_reports.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Text('ገና ምንም ሪፖርት የለም (No reports yet)', style: TextStyle(color: Colors.grey)),
+                      ),
+                    ),
+
                   ..._reports.map((r) {
                     final isImpounded = r.status == 'IMPOUNDED';
 
@@ -118,6 +151,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
                                   ),
                                 ),
+                                if (r.isPending)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      'በመጠባበቅ ላይ (Not synced yet)',
+                                      style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold, fontSize: 9),
+                                    ),
+                                  ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
@@ -152,9 +197,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  '${r.checkedBy} · ${r.location}',
-                                  style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                Expanded(
+                                  child: Text(
+                                    '${r.checkedBy} · ${r.location} · ${r.checkedOnDisplay}',
+                                    style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                  ),
                                 ),
                                 Text(
                                   '${r.fineAmount.toInt()} ብር',

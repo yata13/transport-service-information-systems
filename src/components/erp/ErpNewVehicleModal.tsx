@@ -6,16 +6,19 @@ import { sounds } from '../../utils/sound';
 interface ErpNewVehicleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddVehicle: (newVehicle: BajajVehicle) => void;
+  onAddVehicle: (newVehicle: BajajVehicle) => Promise<void>;
 }
 
-export const ErpNewVehicleModal: React.FC<ErpNewVehicleModalProps> = ({
-  isOpen,
-  onClose,
-  onAddVehicle,
-}) => {
+// Hooks must not run conditionally, so the form lives in its own component
+// that mounts fresh (with new random IDs) every time the modal opens.
+export const ErpNewVehicleModal: React.FC<ErpNewVehicleModalProps> = ({ isOpen, onClose, onAddVehicle }) => {
   if (!isOpen) return null;
+  return <NewVehicleForm onClose={onClose} onAddVehicle={onAddVehicle} />;
+};
 
+const NewVehicleForm: React.FC<Omit<ErpNewVehicleModalProps, 'isOpen'>> = ({ onClose, onAddVehicle }) => {
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [plateNumber, setPlateNumber] = useState('3-AM-');
   const [digitalId, setDigitalId] = useState(`DID-GD-${Math.floor(100000 + Math.random() * 900000)}`);
   const [vin, setVin] = useState(`TVS${Math.floor(1000000000 + Math.random() * 9000000000)}`);
@@ -30,20 +33,21 @@ export const ErpNewVehicleModal: React.FC<ErpNewVehicleModalProps> = ({
   const [address, setAddress] = useState('ፒያሳ መንገድ፣ ጎንደር');
   const [authorizedArea, setAuthorizedArea] = useState('ዞን 1: አራዳ - ፒያሳ - ፋሲል ግቢ');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
     if (!plateNumber.trim() || plateNumber.trim() === '3-AM-') {
-      alert('እባክዎ ትክክለኛ የሰሌዳ ቁጥር ያስገቡ');
+      setSaveError('እባክዎ ትክክለኛ የሰሌዳ ቁጥር ያስገቡ (Enter a valid plate number)');
       return;
     }
     if (!owner.trim()) {
-      alert('እባክዎ የባለቤት ስም ያስገቡ');
+      setSaveError('እባክዎ የባለቤት ስም ያስገቡ (Enter the owner name)');
       return;
     }
 
     const today = new Date().toISOString().split('T')[0];
     const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const permitNo = `PRM-GD-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+    const permitNo = `PRM-GD-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
     const newVehicle: BajajVehicle = {
       id: `bajaj-${Date.now()}`,
@@ -58,7 +62,7 @@ export const ErpNewVehicleModal: React.FC<ErpNewVehicleModalProps> = ({
       ownerPhone: ownerPhone.trim(),
       driverName: driverName.trim() || owner.trim(),
       driverPhone: driverPhone.trim(),
-      driverPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+      driverPhoto: '',
       kebele,
       address,
       permitNo,
@@ -71,9 +75,22 @@ export const ErpNewVehicleModal: React.FC<ErpNewVehicleModalProps> = ({
       registeredCity: 'Gondar / ጎንደር',
     };
 
-    sounds.playSuccess();
-    onAddVehicle(newVehicle);
-    onClose();
+    setIsSaving(true);
+    try {
+      await onAddVehicle(newVehicle);
+      sounds.playSuccess();
+      onClose();
+    } catch (err) {
+      sounds.playAlert();
+      const msg = err instanceof Error ? err.message : String(err);
+      setSaveError(
+        msg.includes('duplicate')
+          ? 'ይህ ሰሌዳ፣ ዲጂታል መታወቂያ ወይም VIN አስቀድሞ ተመዝግቧል (Plate, Digital ID or VIN already registered)'
+          : `አልተቀመጠም (Not saved): ${msg}`
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -273,6 +290,10 @@ export const ErpNewVehicleModal: React.FC<ErpNewVehicleModalProps> = ({
             </div>
           </div>
 
+          {saveError && (
+            <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">{saveError}</div>
+          )}
+
           {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
             <button
@@ -284,10 +305,11 @@ export const ErpNewVehicleModal: React.FC<ErpNewVehicleModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#0C355B] hover:bg-[#092B4B] text-xs font-bold text-white shadow-md flex items-center gap-2 transition cursor-pointer"
+              disabled={isSaving}
+              className="disabled:opacity-60 px-5 py-2.5 rounded-xl bg-[#0C355B] hover:bg-[#092B4B] text-xs font-bold text-white shadow-md flex items-center gap-2 transition cursor-pointer"
             >
               <Plus size={16} />
-              <span>በመዝገብ ውስጥ አካትት (Save to Registry)</span>
+              <span>{isSaving ? 'በማስቀመጥ ላይ...' : 'በመዝገብ ውስጥ አካትት (Save to Registry)'}</span>
             </button>
           </div>
         </form>

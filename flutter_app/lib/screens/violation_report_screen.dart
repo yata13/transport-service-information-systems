@@ -6,14 +6,21 @@ import '../services/supabase_service.dart';
 class ViolationReportScreen extends StatefulWidget {
   final BajajVehicle vehicle;
 
-  const ViolationReportScreen({super.key, required this.vehicle});
+  /// Plate the officer actually saw on the vehicle (differs on a mismatch).
+  final String? physicalPlate;
+
+  const ViolationReportScreen({super.key, required this.vehicle, this.physicalPlate});
 
   @override
   State<ViolationReportScreen> createState() => _ViolationReportScreenState();
 }
 
 class _ViolationReportScreenState extends State<ViolationReportScreen> {
-  final _locationController = TextEditingController(text: 'ጎንደር ፒያሳ አደባባይ (Piassa Square)');
+  late final _locationController = TextEditingController(
+    text: (SupabaseService.currentOfficer?.assignedZone.isNotEmpty ?? false)
+        ? SupabaseService.currentOfficer!.assignedZone
+        : 'ጎንደር ከተማ (Gondar City)',
+  );
   final _notesController = TextEditingController();
   double _fineAmount = 1000;
   bool _impoundVehicle = false;
@@ -50,49 +57,93 @@ class _ViolationReportScreenState extends State<ViolationReportScreen> {
   late String _selectedReasonAm;
   late String _selectedReasonEn;
 
+  String get _seenPlate {
+    final p = widget.physicalPlate?.trim() ?? '';
+    return p.isNotEmpty ? p.toUpperCase() : widget.vehicle.plateNumber;
+  }
+
+  bool get _isMismatch {
+    String n(String s) => s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    return n(_seenPlate) != n(widget.vehicle.plateNumber);
+  }
+
   @override
   void initState() {
     super.initState();
-    _selectedReasonAm = _violationTypes.first['reasonAm']!;
-    _selectedReasonEn = _violationTypes.first['reasonEn']!;
+    // Pre-select the violation that matches what the check found.
+    final initial = _isMismatch
+        ? _violationTypes[3]
+        : widget.vehicle.status == 'EXPIRED'
+            ? _violationTypes[0]
+            : _violationTypes[1];
+    _selectedReasonAm = initial['reasonAm']!;
+    _selectedReasonEn = initial['reasonEn']!;
+    _fineAmount = double.parse(initial['fine']!);
+    _impoundVehicle = _isMismatch || widget.vehicle.isBlacklisted;
+  }
+
+  @override
+  void dispose() {
+    _locationController.dispose();
+    _notesController.dispose();
+    super.dispose();
   }
 
   void _handleSubmit() async {
+    final officer = SupabaseService.currentOfficer;
+    if (officer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('እባክዎ እንደገና ይግቡ (Please sign in again)'), backgroundColor: Colors.red),
+      );
+      return;
+    }
     setState(() => _isSubmitting = true);
 
     final report = TrafficViolationReport(
-      id: 'rep-${DateTime.now().millisecondsSinceEpoch}',
-      reportNumber: 'RPT-GD-${DateTime.now().year}-${DateTime.now().millisecond}',
+      id: '',
+      reportNumber: SupabaseService.generateReportNumber(),
       digitalId: widget.vehicle.digitalId,
-      vehiclePlate: widget.vehicle.plateNumber,
-      registeredPlate: widget.vehicle.plateNumber,
+      vehiclePlate: _seenPlate,
+      registeredPlate: widget.vehicle.status == 'ILLEGAL' ? null : widget.vehicle.plateNumber,
       reason: _selectedReasonEn,
       reasonAm: _selectedReasonAm,
       actionTaken: _impoundVehicle
           ? 'ባጃጅ ወደ ጎንደር ትራፊክ መምሪያ እንዲቆም ተደርጓል (Impounded)'
           : 'የትራፊክ ቅጣት ${_fineAmount.toInt()} ብር ተጥሏል (Traffic Ticket)',
       fineAmount: _fineAmount,
-      checkedOn: DateTime.now().toString().split('.')[0],
-      checkedBy: 'ኢንስፔክተር አበበ ተሰማ',
+      checkedOn: DateTime.now().toUtc().toIso8601String(),
+      checkedBy: officer.fullName,
       notes: _notesController.text.isNotEmpty ? _notesController.text : 'መደበኛ ፍተሻ',
       status: _impoundVehicle ? 'IMPOUNDED' : 'SUBMITTED',
       location: _locationController.text,
     );
 
-    await SupabaseService.submitViolationReport(report);
-
+    final result = await SupabaseService.submitViolationReport(report);
+    if (!mounted) return;
     setState(() => _isSubmitting = false);
 
-    if (mounted) {
+    if (!result.ok) {
+      // Keep the form open so the officer can retry; nothing is lost.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('የጥሰት ሪፖርት #${report.reportNumber} በተሳካ ሁኔታ ተመዝግቧል!'),
-          backgroundColor: const Color(0xFF0C355B),
-          duration: const Duration(seconds: 3),
+          content: Text('ሪፖርቱ አልተቀመጠም (Not saved): ${result.error}'),
+          backgroundColor: Colors.red.shade800,
+          duration: const Duration(seconds: 6),
         ),
       );
-      Navigator.pop(context);
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.synced
+            ? 'ሪፖርት #${report.reportNumber} ተመዝግቧል – በ ERP ዳሽቦርድ ላይ ታይቷል'
+            : 'ኢንተርኔት የለም፤ ሪፖርቱ በስልኩ ተቀምጧል እና ኔትወርክ ሲመጣ ይላካል (Saved offline, will sync)'),
+        backgroundColor: result.synced ? const Color(0xFF0C355B) : Colors.orange.shade800,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+    Navigator.pop(context);
   }
 
   @override
@@ -126,7 +177,9 @@ class _ViolationReportScreenState extends State<ViolationReportScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ሰሌዳ: ${widget.vehicle.plateNumber}',
+                          _isMismatch
+                              ? 'ሰሌዳ: $_seenPlate (የተመዘገበው: ${widget.vehicle.plateNumber})'
+                              : 'ሰሌዳ: ${widget.vehicle.plateNumber}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red),
                         ),
                         Text(

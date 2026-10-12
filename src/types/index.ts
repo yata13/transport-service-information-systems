@@ -46,9 +46,12 @@ export interface TrafficViolationReport {
   checkedOn: string;
   checkedBy: string;
   notes: string;
-  status: 'SUBMITTED' | 'PAID' | 'IMPOUNDED' | 'RESOLVED';
+  status: ReportStatus;
   location: string;
+  createdAt?: string; // ISO timestamp from the database
 }
+
+export type ReportStatus = 'SUBMITTED' | 'PAID' | 'IMPOUNDED' | 'RESOLVED';
 
 export type NavScreen = 
   | 'login'
@@ -62,3 +65,38 @@ export type NavScreen =
   | 'reports'
   | 'users'
   | 'settings';
+
+export type InspectionResult = 'VALID' | 'EXPIRED' | 'SUSPENDED' | 'MISMATCH' | 'NOT_FOUND';
+
+export interface Inspection {
+  id: string;
+  digitalId: string;
+  plateChecked: string;
+  registeredPlate: string;
+  result: InspectionResult;
+  officerName: string;
+  badgeNumber: string;
+  location: string;
+  source: 'mobile' | 'web';
+  createdAt: string; // ISO timestamp
+}
+
+export interface Officer {
+  id: string;
+  username: string;
+  fullName: string;
+  badgeNumber: string;
+  role: string;
+  phoneNumber: string;
+  assignedZone: string;
+  isActive: boolean;
+}
+
+export interface SessionUser {
+  name: string;
+  badge: string;
+  role: string;
+}
+
+// live = realtime socket up; polling = data loads but realtime is blocked
+export type SyncStatus = 'connecting' | 'live' | 'polling' | 'offline';

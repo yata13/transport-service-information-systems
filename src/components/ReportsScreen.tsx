@@ -12,17 +12,36 @@ import {
   MapPin, 
   User 
 } from 'lucide-react';
-import { TrafficViolationReport } from '../types';
+import { ReportStatus, TrafficViolationReport } from '../types';
 import { sounds } from '../utils/sound';
 
 interface ReportsScreenProps {
   reports: TrafficViolationReport[];
+  initialStatus?: string;
+  onUpdateStatus: (report: TrafficViolationReport, status: ReportStatus) => Promise<void>;
 }
 
-export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
+export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports, initialStatus = 'ALL', onUpdateStatus }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('ALL');
-  const [selectedReport, setSelectedReport] = useState<TrafficViolationReport | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>(initialStatus);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  // Always render the latest version of the open report (realtime may update it).
+  const selectedReport = reports.find((r) => r.id === selectedId) || null;
+
+  const changeStatus = async (report: TrafficViolationReport, status: ReportStatus) => {
+    setIsUpdating(true);
+    setUpdateError(null);
+    try {
+      await onUpdateStatus(report, status);
+      sounds.playSuccess();
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const totalFines = reports.reduce((sum, r) => sum + (r.fineAmount || 0), 0);
   const impoundedCount = reports.filter((r) => r.status === 'IMPOUNDED' || r.actionTaken.includes('ታግዷል')).length;
@@ -34,6 +53,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
     const matchesSearch =
       r.reportNumber.toLowerCase().includes(q) ||
       r.vehiclePlate.toLowerCase().includes(q) ||
+      r.digitalId.toLowerCase().includes(q) ||
       r.reasonAm.toLowerCase().includes(q) ||
       r.checkedBy.toLowerCase().includes(q) ||
       r.location.toLowerCase().includes(q);
@@ -43,11 +63,13 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
   });
 
   const exportCSV = () => {
+    const cell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const headers = ['ReportNumber,Plate,Reason,FineETB,Officer,Location,Status,Date\n'];
-    const rows = filtered.map(r => 
-      `"${r.reportNumber}","${r.vehiclePlate}","${r.reasonAm}","${r.fineAmount}","${r.checkedBy}","${r.location}","${r.status}","${r.checkedOn}"\n`
+    const rows = filtered.map(r =>
+      [r.reportNumber, r.vehiclePlate, r.reasonAm, r.fineAmount, r.checkedBy, r.location, r.status, r.checkedOn].map(cell).join(',') + '\n'
     );
-    const blob = new Blob([...headers, ...rows], { type: 'text/csv' });
+    // BOM so Excel opens Amharic text correctly
+    const blob = new Blob(['\uFEFF', ...headers, ...rows], { type: 'text/csv;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -57,7 +79,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
@@ -138,12 +160,13 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
         </div>
 
         {/* Status filter */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+        <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold">
           {[
             { id: 'ALL', label: 'ሁሉም' },
             { id: 'SUBMITTED', label: 'የተመዘገቡ' },
             { id: 'IMPOUNDED', label: 'የታገዱ' },
             { id: 'PAID', label: 'የተከፈሉ' },
+            { id: 'RESOLVED', label: 'የተዘጉ' },
           ].map((item) => (
             <button
               key={item.id}
@@ -230,7 +253,8 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => {
-                            setSelectedReport(rep);
+                            setSelectedId(rep.id);
+                            setUpdateError(null);
                             sounds.playScanBeep();
                           }}
                           className="px-2.5 py-1 bg-slate-100 hover:bg-[#0C355B] hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition cursor-pointer"
@@ -257,7 +281,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
                 <p className="text-xs text-blue-200 font-mono">{selectedReport.reportNumber}</p>
               </div>
               <button
-                onClick={() => setSelectedReport(null)}
+                onClick={() => setSelectedId(null)}
                 className="text-white/70 hover:text-white"
               >
                 ✕
@@ -297,6 +321,41 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
                   <span className="text-slate-500 font-medium">ቀን እና ሰዓት:</span>
                   <span className="font-mono text-slate-800">{selectedReport.checkedOn}</span>
                 </div>
+                {selectedReport.notes && (
+                  <div className="pt-2 flex justify-between gap-4">
+                    <span className="text-slate-500 font-medium shrink-0">ማስታወሻ:</span>
+                    <span className="text-slate-800 text-right">{selectedReport.notes}</span>
+                  </div>
+                )}
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">ሁኔታ (Status):</span>
+                  <span className="font-bold text-slate-900">{selectedReport.status}</span>
+                </div>
+              </div>
+
+              {/* Status workflow */}
+              <div className="pt-3 border-t border-slate-100">
+                <div className="text-[11px] font-bold text-slate-600 mb-2">ሁኔታ ቀይር (Update status):</div>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { id: 'PAID', label: 'ተከፍሏል (Paid)', cls: 'bg-emerald-600 hover:bg-emerald-700' },
+                    { id: 'RESOLVED', label: 'ተዘግቷል (Resolved)', cls: 'bg-slate-700 hover:bg-slate-800' },
+                    { id: 'IMPOUNDED', label: 'ታግዷል (Impounded)', cls: 'bg-red-600 hover:bg-red-700' },
+                    { id: 'SUBMITTED', label: 'በሂደት (Pending)', cls: 'bg-amber-600 hover:bg-amber-700' },
+                  ] as { id: ReportStatus; label: string; cls: string }[])
+                    .filter((opt) => opt.id !== selectedReport.status)
+                    .map((opt) => (
+                      <button
+                        key={opt.id}
+                        disabled={isUpdating}
+                        onClick={() => changeStatus(selectedReport, opt.id)}
+                        className={`px-3 py-1.5 rounded-lg text-white text-[11px] font-bold transition cursor-pointer disabled:opacity-60 ${opt.cls}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                </div>
+                {updateError && <p className="mt-2 text-[11px] text-red-600 font-medium">{updateError}</p>}
               </div>
             </div>
 
@@ -311,7 +370,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ reports }) => {
                 <span>አትም (Print Ticket)</span>
               </button>
               <button
-                onClick={() => setSelectedReport(null)}
+                onClick={() => setSelectedId(null)}
                 className="px-4 py-2 bg-[#0C355B] text-white rounded-xl text-xs font-bold transition cursor-pointer"
               >
                 ዝጋ (Close)

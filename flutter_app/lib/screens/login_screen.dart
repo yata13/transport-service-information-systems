@@ -10,17 +10,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController(text: 'inspector_abebe');
-  final _passwordController = TextEditingController(text: 'gondar2025');
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
-  void _fillDemo(String username, String password) {
-    setState(() {
-      _usernameController.text = username;
-      _passwordController.text = password;
-      _errorMessage = null;
-    });
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   void _handleLogin() async {
@@ -29,30 +28,39 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    final officer = await SupabaseService.loginOfficer(
-      _usernameController.text,
-      _passwordController.text,
-    );
-
-    setState(() => _isLoading = false);
-
-    if (officer != null) {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AppShell(
-              officerName: officer['full_name'] ?? 'ኢንስፔክተር አበበ ተሰማ',
-              badgeNumber: officer['badge_number'] ?? 'GD-TRF-042',
-              officerRole: officer['role'] ?? 'Field Traffic Inspector',
-            ),
-          ),
-        );
+    OfficerSession? officer;
+    String? error;
+    try {
+      officer = await SupabaseService.loginOfficer(
+        _usernameController.text,
+        _passwordController.text,
+      );
+      if (officer == null) {
+        error = 'የተጠቃሚ ስም ወይም የይለፍ ቃል የተሳሳተ ነው (Invalid credentials)';
       }
-    } else {
-      setState(() {
-        _errorMessage = 'የተጠቃሚ ስም ወይም የይለፍ ቃል የተሳሳተ ነው (Invalid credentials)';
-      });
+    } catch (e) {
+      debugPrint('Login error: $e');
+      error = 'ከሰርቨሩ ጋር መገናኘት አልተቻለም። ኢንተርኔት ያረጋግጡ (Cannot reach server – check internet)';
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _errorMessage = error;
+    });
+
+    final signedIn = officer;
+    if (signedIn != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AppShell(
+            officerName: signedIn.fullName,
+            badgeNumber: signedIn.badgeNumber,
+            officerRole: signedIn.role,
+          ),
+        ),
+      );
     }
   }
 
@@ -163,6 +171,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: _passwordController,
                         obscureText: true,
+                        onSubmitted: (_) {
+                          if (!_isLoading) _handleLogin();
+                        },
                         decoration: InputDecoration(
                           labelText: 'የይለፍ ቃል (Password)',
                           prefixIcon: const Icon(Icons.vpn_key, size: 20),
@@ -209,33 +220,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 'ግባ (Sign In)',
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                               ),
-                      ),
-
-                      const SizedBox(height: 18),
-                      const Divider(height: 1),
-                      const SizedBox(height: 14),
-
-                      // Quick Demo Fill Chips
-                      const Text(
-                        'ፈጣን የሙከራ አካውንቶች (Quick Demo):',
-                        style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          ActionChip(
-                            avatar: const Icon(Icons.check_circle, size: 14, color: Color(0xFF0C355B)),
-                            label: const Text('ኢንስፔክተር አበበ (Abebe)', style: TextStyle(fontSize: 11)),
-                            onPressed: () => _fillDemo('inspector_abebe', 'gondar2025'),
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.shield, size: 14, color: Color(0xFF0C355B)),
-                            label: const Text('ረዳት ሰለሞን (Selemon)', style: TextStyle(fontSize: 11)),
-                            onPressed: () => _fillDemo('inspector_selemon', 'gondar2025'),
-                          ),
-                        ],
                       ),
                     ],
                   ),

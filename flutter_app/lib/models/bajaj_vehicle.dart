@@ -53,7 +53,19 @@ class BajajVehicle {
     required this.registeredCity,
   });
 
+  /// A permit past its expiry date is expired, whatever the stored status says.
+  static String effectiveStatus(String status, String expiryDate) {
+    if (status == 'ACTIVE' && expiryDate.length >= 10) {
+      final expiry = DateTime.tryParse(expiryDate.substring(0, 10));
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      if (expiry != null && expiry.isBefore(today)) return 'EXPIRED';
+    }
+    return status;
+  }
+
   factory BajajVehicle.fromJson(Map<String, dynamic> json) {
+    final expiry = (json['expiry_date'] ?? json['expiryDate'] ?? '').toString().split('T')[0];
     return BajajVehicle(
       id: json['id']?.toString() ?? '',
       digitalId: json['digital_id'] ?? json['digitalId'] ?? '',
@@ -72,9 +84,9 @@ class BajajVehicle {
       address: json['address'] ?? 'ጎንደር ከተማ',
       permitNo: json['permit_number'] ?? json['permitNo'] ?? '',
       issueDate: (json['issue_date'] ?? json['issueDate'] ?? '').toString().split('T')[0],
-      expiryDate: (json['expiry_date'] ?? json['expiryDate'] ?? '').toString().split('T')[0],
+      expiryDate: expiry,
       authorizedArea: json['authorized_area'] ?? json['authorizedArea'] ?? '',
-      status: json['status'] ?? 'ACTIVE',
+      status: effectiveStatus(json['status'] ?? 'ACTIVE', expiry),
       isBlacklisted: json['is_blacklisted'] == true,
       blacklistReason: json['blacklist_reason'],
       notes: json['notes'],
@@ -85,7 +97,6 @@ class BajajVehicle {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'digital_id': digitalId,
       'plate_number': plateNumber,
       'vin_chassis': vin,
@@ -114,7 +125,8 @@ class BajajVehicle {
   }
 }
 
-// Initial Mock Seed identical to the Website
+// Offline-only fallback registry, used before the phone has ever reached the
+// server. Real data always comes from Supabase.
 final List<BajajVehicle> initialBajajDatabase = [
   BajajVehicle(
     id: 'bajaj-1',

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { ShieldLogo } from './ShieldLogo';
 import { sounds } from '../utils/sound';
+import { loginOfficer } from '../lib/api';
+import { SessionUser } from '../types';
 
 interface LoginScreenProps {
-  onLoginSuccess: (user: { name: string; badge: string; role: string }) => void;
+  onLoginSuccess: (user: SessionUser) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
@@ -30,38 +32,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     sounds.playScanBeep();
 
     try {
-      // Attempt backend authentication
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password: password.trim() })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsLoading(false);
-        sounds.playSuccess();
-        onLoginSuccess({
-          name: data.full_name || username.trim(),
-          badge: data.badge_number || 'GD-TRF-042',
-          role: data.role || 'Field Traffic Inspector'
-        });
+      const user = await loginOfficer(username, password);
+      setIsLoading(false);
+      if (!user) {
+        sounds.playAlert();
+        setErrorMessage('የተጠቃሚ ስም ወይም የይለፍ ቃል የተሳሳተ ነው (Invalid username or password)');
         return;
       }
-    } catch {
-      // Backend not reached or running in static mode; proceed with standard credential verification
-    }
-
-    // Client-side fallback authentication if backend MySQL server is connecting
-    setTimeout(() => {
-      setIsLoading(false);
       sounds.playSuccess();
-      onLoginSuccess({
-        name: username.trim() === 'inspector_abebe' ? 'ኢንስፔክተር አበበ ተሰማ' : username.trim(),
-        badge: 'GD-TRF-042',
-        role: 'Field Traffic Inspector'
-      });
-    }, 600);
+      onLoginSuccess(user);
+    } catch (err) {
+      setIsLoading(false);
+      console.error(err);
+      setErrorMessage('ከሰርቨሩ ጋር መገናኘት አልተቻለም (Cannot reach the server – check internet / database setup)');
+    }
   };
 
   return (
@@ -160,46 +144,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        {/* Authorized Officers Quick Access */}
-        <div className="pt-3 border-t border-slate-100 mt-4 text-center">
-          <p className="text-[11px] font-semibold text-slate-500 mb-2">
-            የተመዘገቡ ተረኛ መኮንኖች (Authorized Active Duty Officers):
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <button
-              type="button"
-              onClick={() => {
-                onLoginSuccess({
-                  name: 'ኢንስፔክተር አበበ ተሰማ',
-                  badge: 'GD-TRF-042',
-                  role: 'Field Traffic Inspector',
-                });
-              }}
-              className="text-xs bg-blue-50 text-blue-800 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 font-medium transition cursor-pointer"
-            >
-              👮‍♂️ ኢንስፔክተር አበበ (Abebe)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onLoginSuccess({
-                  name: 'ረዳት ኢንስፔክተር ሰለሞን',
-                  badge: 'GD-TRF-019',
-                  role: 'Checkpoint Lead',
-                });
-              }}
-              className="text-xs bg-slate-100 text-slate-800 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-300 font-medium transition cursor-pointer"
-            >
-              🛡️ ረዳት ሰለሞን (Selemon)
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Footer */}
       <footer className="text-center pt-3 pb-1">
         <p className="text-[10px] text-slate-500 leading-tight">
-          © 2024 የትራንስፖርት ፈቃድ እና ማረጋገጫ ሥርዓት - ሁሉም መብት የተጠበቀ ናቸው::
+          © {new Date().getFullYear()} የትራንስፖርት ፈቃድ እና ማረጋገጫ ሥርዓት - ሁሉም መብት የተጠበቀ ናቸው::
         </p>
         <p className="text-[9px] text-slate-400 mt-0.5">
           Gondar City Road Transport & Traffic Control Department

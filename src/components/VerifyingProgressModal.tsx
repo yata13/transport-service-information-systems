@@ -20,7 +20,6 @@ export const VerifyingProgressModal: React.FC<VerifyingProgressModalProps> = ({
   onComplete
 }) => {
   const [completedSteps, setCompletedSteps] = useState<number>(0);
-  const [backendResult, setBackendResult] = useState<BajajVehicle | null>(null);
 
   const checks = [
     { id: 1, title: 'የዳታቤዝ ግንኙነት መፈተሽ', en: 'Live Database Query Check' },
@@ -30,30 +29,6 @@ export const VerifyingProgressModal: React.FC<VerifyingProgressModalProps> = ({
     { id: 5, title: 'የጥቁር መዝገብ (Blacklist) ፍተሻ', en: 'Police Blacklist Audit' },
     { id: 6, title: 'የተፈቀደ የጎንደር ዞን መስመር', en: 'Gondar Route Authorization' },
   ];
-
-  // Real backend verification query
-  useEffect(() => {
-    let isCancelled = false;
-    async function fetchBackendVerification() {
-      try {
-        const queryParam = encodeURIComponent(query.value || '');
-        const res = await fetch(`/api/vehicles/verify?query=${queryParam}&type=${query.type}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.found && data.vehicle && !isCancelled) {
-            setBackendResult(data.vehicle);
-          }
-        }
-      } catch (err) {
-        console.warn('Real backend query fallback to local state:', err);
-      }
-    }
-
-    fetchBackendVerification();
-    return () => {
-      isCancelled = true;
-    };
-  }, [query]);
 
   // Sequentially animate inspection steps with sound
   useEffect(() => {
@@ -73,42 +48,19 @@ export const VerifyingProgressModal: React.FC<VerifyingProgressModalProps> = ({
   // Handle completion when inspection steps finish
   useEffect(() => {
     if (completedSteps >= checks.length + 1) {
-      if (query.isMismatch) {
+      const finalStatus = query.simulatedBajaj?.status;
+      if (query.isMismatch || finalStatus !== 'ACTIVE') {
         sounds.playAlert();
       } else {
         sounds.playSuccess();
       }
 
-      // Prioritize real backend verification result, then query simulation, then fallback
-      const finalVehicle = backendResult || query.simulatedBajaj || {
-        id: 'bajaj-1',
-        digitalId: 'DID-25-000784521',
-        plateNumber: 'AA-12345',
-        vin: 'MBN12345678912345',
-        vehicleType: 'Bajaj (ባጃጅ)',
-        bajajModel: 'TVS King',
-        bajajAssociation: 'Addis Bajaj Share Company',
-        color: 'Red (ቀይ)',
-        owner: 'አቶ ታምራት አለማየሁ',
-        ownerPhone: '+251 91 876 5432',
-        driverName: 'ዮሐንስ ጌታቸው',
-        driverPhone: '+251 91 432 1098',
-        driverPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
-        kebele: 'ቀበሌ 03',
-        address: 'አራዳ መንገድ፣ ቀበሌ 03፣ ጎንደር',
-        permitNo: 'PRM-25-5566',
-        issueDate: '2025-01-10',
-        expiryDate: '2026-01-09',
-        authorizedArea: 'ሰበሰተፖል (Sebastopol)',
-        status: 'ACTIVE',
-        isBlacklisted: false,
-        qrCodeValue: 'DID-25-000784521|AA-12345|PRM-25-5566',
-        registeredCity: 'Gondar / ጎንደር'
-      };
+      // App.tsx always supplies the matched vehicle (or an "unregistered" placeholder).
+      const finalVehicle = query.simulatedBajaj!;
 
       onComplete(finalVehicle, !!query.isMismatch);
     }
-  }, [completedSteps, query, backendResult, onComplete, checks.length]);
+  }, [completedSteps, query, onComplete, checks.length]);
 
   return (
     <div className="flex-1 flex flex-col p-3 bg-gradient-to-b from-[#F4F7FB] to-[#E9EFF5] overflow-y-auto">
@@ -167,7 +119,7 @@ export const VerifyingProgressModal: React.FC<VerifyingProgressModalProps> = ({
             እባክዎ ይጠብቁ... (Verifying with Backend)
           </p>
           <span className="text-[11px] text-slate-500 font-mono mt-0.5">
-            መለያ: {query.value || 'DID-25-000784521'}
+            መለያ: {query.value || '-'}
           </span>
         </div>
 

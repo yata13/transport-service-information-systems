@@ -8,12 +8,14 @@ This guide walks you through setting up **Supabase**, running the **Flutter app*
 
 1. Go to [supabase.com](https://supabase.com) and create a free project named `gondar-traffic`.
 2. In the Supabase Dashboard, click on **SQL Editor** on the left menu.
-3. Open `flutter_app/supabase_schema.sql` (or copy its contents), paste it into the SQL editor, and click **Run**.
-   - This creates the `bajaj_vehicles` and `officers` tables with full seed data and permits.
-4. Go to **Project Settings** (gear icon) → **API**:
+3. Paste the **whole** file `supabase/migrations/20261012000000_shared_realtime_backend.sql` into the SQL editor
+   and click **Run**. **Required** – it creates all tables, realtime sync with the ERP website, the inspections
+   log and secure (hashed) login.
+4. Optional: run `flutter_app/supabase_schema.sql` the same way to add sample vehicles and reports.
+5. Go to **Project Settings** (gear icon) → **API**:
    - Copy **Project URL** (e.g. `https://xxxx.supabase.co`)
    - Copy **Project API Key (anon/public)**.
-5. In `flutter_app/lib/main.dart`, paste them into:
+6. In `flutter_app/lib/main.dart`, paste them into (and use the **same** values for the website, see the root `README.md`):
    ```dart
    await Supabase.initialize(
      url: 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co',
@@ -72,4 +74,5 @@ flutter_app/build/app/outputs/flutter-apk/app-release.apk
 2. **Supabase Cloud Backend**: Real queries by Digital ID, Plate Number (`AA-12345`), and VIN.
 3. **Validity First Screen**: Displays the large Green (`VALID`) or Amber (`EXPIRED`) verdict first, with driver photo, plain-text phone, and Kebele address.
 4. **Full Details Page**: Detailed 15-attribute technical inspection card.
-5. **Phase 2 Preview Badges**: Clear UI prototype markers on Dashboard & Reports so stakeholders understand upcoming development milestones.
+5. **Live sync with the ERP website**: every inspection and violation report shows up on the HQ dashboard instantly.
+6. **Offline outbox**: with no network, reports are saved on the phone and uploaded automatically later.

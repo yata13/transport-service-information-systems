@@ -1,22 +1,32 @@
-import React, { useState } from 'react';
-import { Globe, Volume2, Bell, Shield, Moon, Sun, Smartphone, Check } from 'lucide-react';
+import React from 'react';
+import { Globe, Volume2, Shield, Database, RefreshCw } from 'lucide-react';
 import { sounds } from '../utils/sound';
+import { SyncStatus } from '../types';
+import { SUPABASE_URL } from '../lib/supabase';
 
 interface SettingsScreenProps {
   language: 'am' | 'en' | 'dual';
   onChangeLanguage: (lang: 'am' | 'en' | 'dual') => void;
   soundEnabled: boolean;
   onToggleSound: (enabled: boolean) => void;
+  syncStatus: SyncStatus;
+  lastSync: Date | null;
+  syncError: string | null;
+  onRefresh: () => Promise<void>;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   language,
   onChangeLanguage,
   soundEnabled,
-  onToggleSound
+  onToggleSound,
+  syncStatus,
+  lastSync,
+  syncError,
+  onRefresh,
 }) => {
   return (
-    <div className="flex-1 flex flex-col p-3 bg-gradient-to-b from-[#F4F7FB] to-[#E9EFF5] overflow-y-auto space-y-3">
+    <div className="flex-1 flex flex-col p-3 sm:p-6 max-w-3xl mx-auto w-full bg-gradient-to-b from-[#F4F7FB] to-[#E9EFF5] overflow-y-auto space-y-3">
       {/* Title */}
       <div className="pt-1 flex items-center justify-between">
         <div>
@@ -24,13 +34,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <h2 className="text-lg font-bold text-[#0C355B] tracking-tight leading-tight">
               ቅንብሮች (Settings)
             </h2>
-            <span className="text-[9px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-              የማሳያ ሥሪት (Prototype)
-            </span>
           </div>
           <p className="text-[11px] text-slate-500 font-medium">
             የሥርዓቱ አጠቃቀም እና ምርጫዎች
           </p>
+        </div>
+      </div>
+
+      {/* Cloud database sync (shared with the mobile app) */}
+      <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-xs space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Database size={16} className="text-blue-700" />
+            <h3 className="text-xs font-bold text-slate-800">የዳታቤዝ ግንኙነት (Cloud Sync with Mobile App)</h3>
+          </div>
+          <button
+            onClick={() => {
+              sounds.playScanBeep();
+              onRefresh();
+            }}
+            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center gap-1"
+          >
+            <RefreshCw size={12} />
+            አድስ (Refresh)
+          </button>
+        </div>
+        <div className="text-xs text-slate-600 space-y-1">
+          <p>
+            <strong className="text-slate-700">ሁኔታ:</strong>{' '}
+            <span className={syncStatus === 'live' ? 'text-emerald-700 font-bold' : syncStatus === 'offline' ? 'text-red-700 font-bold' : 'text-amber-700 font-bold'}>
+              {syncStatus === 'live' ? 'በቀጥታ ተገናኝቷል (Live – realtime)' : syncStatus === 'polling' ? 'ተመሳስሏል – በየደቂቃው ይታደሳል (Synced – realtime blocked, refreshing every minute)' : syncStatus === 'offline' ? 'ከመስመር ውጭ (Offline)' : 'በማገናኘት ላይ (Connecting)'}
+            </span>
+          </p>
+          <p><strong className="text-slate-700">ሰርቨር:</strong> <span className="font-mono">{SUPABASE_URL.replace('https://', '')}</span></p>
+          <p><strong className="text-slate-700">መጨረሻ የተዘመነ:</strong> {lastSync ? lastSync.toLocaleString() : '-'}</p>
+          {syncError && <p className="text-red-600 font-medium break-words">{syncError}</p>}
         </div>
       </div>
 
@@ -123,8 +161,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <div className="text-xs text-slate-600 space-y-1">
           <p><strong className="text-slate-700">ከተማ:</strong> ጎንደር (Gondar City, Amhara)</p>
           <p><strong className="text-slate-700">መምሪያ:</strong> የትራንስፖርትና መንገድ ትራፊክ መምሪያ</p>
-          <p><strong className="text-slate-700">የአገልጋይ ስሪት:</strong> v2.5.4 (Gondar-Deploy)</p>
-          <p><strong className="text-slate-700">የደህንነት ሁኔታ:</strong> ኦፊሴላዊ የተረጋገጠ ግንኙነት</p>
+          <p><strong className="text-slate-700">ዳታቤዝ:</strong> Supabase (PostgreSQL + Realtime)</p>
         </div>
       </div>
     </div>
