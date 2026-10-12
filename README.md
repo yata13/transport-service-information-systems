@@ -20,13 +20,12 @@ website appear on every phone the same way.
 
 ## 1. Database setup (one time)
 
-In the Supabase dashboard → **SQL Editor**, run these two files **in order**:
+In the Supabase dashboard → **SQL Editor**, paste the **whole** file
+`supabase/migrations/20261012000000_shared_realtime_backend.sql` and click **Run**.
+It creates any missing table (vehicles, officers, reports, inspections), turns on realtime,
+secure login and website write access. Safe to run more than once.
 
-1. `flutter_app/supabase_schema.sql` – tables + starter data (skip if already done)
-2. `supabase/migrations/20261012000000_shared_realtime_backend.sql` – **required**: inspections log,
-   realtime, secure login, website write access
-
-Both scripts are safe to run more than once.
+Optional: `flutter_app/supabase_schema.sql` adds sample vehicles and reports.
 
 > ⚠️ The starter officers use the password `gondar2025`. Change it after setup:
 > ```sql

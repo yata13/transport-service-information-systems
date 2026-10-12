@@ -1,7 +1,8 @@
 -- ====================================================================
 -- GONDAR TRAFFIC - SHARED REAL-TIME BACKEND (App + ERP Website)
--- Run AFTER flutter_app/supabase_schema.sql.
--- Safe to run more than once.
+-- Self-contained: creates any missing base table, so it works on a fresh
+-- project or one where only part of the old schema was run.
+-- Safe to run more than once. Paste the WHOLE file and click Run.
 --
 -- What this does:
 --   1. Adds an `inspections` log (every roadside check from the phone app)
@@ -12,6 +13,104 @@
 -- ====================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+-- --------------------------------------------------------------------
+-- 0. Base tables (skipped if they already exist)
+-- --------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.bajaj_vehicles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    digital_id TEXT NOT NULL UNIQUE,
+    plate_number TEXT NOT NULL UNIQUE,
+    vin_chassis TEXT NOT NULL UNIQUE,
+    vehicle_type TEXT NOT NULL DEFAULT 'Bajaj (ባጃጅ)',
+    bajaj_model TEXT NOT NULL,
+    bajaj_association TEXT NOT NULL,
+    color TEXT NOT NULL,
+    owner_name TEXT NOT NULL,
+    owner_phone TEXT,
+    driver_name TEXT NOT NULL,
+    driver_phone TEXT,
+    driver_photo TEXT,
+    kebele TEXT DEFAULT 'ቀበሌ 03 (Kebele 03)',
+    address TEXT DEFAULT 'አራዳ መንገድ፣ ጎንደር',
+    permit_number TEXT NOT NULL UNIQUE,
+    issue_date DATE NOT NULL,
+    expiry_date DATE NOT NULL,
+    authorized_area TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'EXPIRED', 'SUSPENDED', 'ILLEGAL', 'MISMATCH')),
+    is_blacklisted BOOLEAN DEFAULT FALSE,
+    blacklist_reason TEXT,
+    notes TEXT,
+    qr_code_value TEXT,
+    registered_city TEXT DEFAULT 'Gondar / ጎንደር',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.officers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    badge_number TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL DEFAULT 'Field Traffic Inspector',
+    phone_number TEXT,
+    assigned_zone TEXT DEFAULT 'Gondar City',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.violation_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    report_number TEXT NOT NULL UNIQUE,
+    digital_id TEXT NOT NULL,
+    vehicle_plate TEXT NOT NULL,
+    registered_plate TEXT,
+    reason TEXT NOT NULL,
+    reason_am TEXT NOT NULL,
+    action_taken TEXT NOT NULL,
+    fine_amount NUMERIC DEFAULT 0,
+    checked_on TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    checked_by TEXT NOT NULL,
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'SUBMITTED' CHECK (status IN ('SUBMITTED', 'PAID', 'IMPOUNDED', 'RESOLVED')),
+    location TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- Older versions of the vehicles table may lack columns the apps use.
+ALTER TABLE public.bajaj_vehicles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());
+ALTER TABLE public.violation_reports ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());
+
+ALTER TABLE public.bajaj_vehicles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.officers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.violation_reports ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE ON public.bajaj_vehicles, public.violation_reports TO anon, authenticated;
+
+DROP POLICY IF EXISTS "Allow public read access to vehicles" ON public.bajaj_vehicles;
+CREATE POLICY "Allow public read access to vehicles"
+ON public.bajaj_vehicles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public update to vehicles" ON public.bajaj_vehicles;
+CREATE POLICY "Allow public update to vehicles"
+ON public.bajaj_vehicles FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Allow public read access to officers" ON public.officers;
+CREATE POLICY "Allow public read access to officers"
+ON public.officers FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public read access to violation reports" ON public.violation_reports;
+CREATE POLICY "Allow public read access to violation reports"
+ON public.violation_reports FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert to violation reports" ON public.violation_reports;
+CREATE POLICY "Allow public insert to violation reports"
+ON public.violation_reports FOR INSERT WITH CHECK (true);
+
+-- Starter officers (only if missing). Passwords get hashed in step 3 below.
+INSERT INTO public.officers (username, password_hash, full_name, badge_number, role, phone_number, assigned_zone) VALUES
+('inspector_abebe', 'gondar2025', 'ኢንስፔክተር አበበ ተሰማ', 'GD-TRF-042', 'Field Traffic Inspector', '+251 91 812 3456', 'ዞን 1: አራዳ - ፒያሳ - ፋሲል'),
+('inspector_selemon', 'gondar2025', 'ረዳት ኢንስፔክተር ሰለሞን አለሙ', 'GD-TRF-019', 'Checkpoint Lead', '+251 92 114 9988', 'ዞን 2: ፒያሳ - አዘዞ - ኤርፖርት')
+ON CONFLICT DO NOTHING;
 
 -- --------------------------------------------------------------------
 -- 1. Inspections log (feeds "Today's inspections" on the dashboard)

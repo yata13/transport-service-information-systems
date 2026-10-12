@@ -1,8 +1,9 @@
 -- ====================================================================
 -- GONDAR CITY TRAFFIC POLICE - SUPABASE POSTGRESQL SCHEMA & SEED
 -- Paste this script directly into Supabase Dashboard -> SQL Editor -> Run
--- THEN run supabase/migrations/20261012000000_shared_realtime_backend.sql
--- (realtime sync with the ERP website + secure hashed login).
+-- Optional: only adds starter data. The required script is
+-- supabase/migrations/20261012000000_shared_realtime_backend.sql
+-- (it creates any missing table by itself).
 -- ====================================================================
 
 -- 1. Create bajaj_vehicles table
@@ -74,20 +75,25 @@ ALTER TABLE public.officers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.violation_reports ENABLE ROW LEVEL SECURITY;
 
 -- Allow read access
+DROP POLICY IF EXISTS "Allow public read access to vehicles" ON public.bajaj_vehicles;
 CREATE POLICY "Allow public read access to vehicles" 
 ON public.bajaj_vehicles FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Allow public read access to officers" ON public.officers;
 CREATE POLICY "Allow public read access to officers" 
 ON public.officers FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Allow public read access to violation reports" ON public.violation_reports;
 CREATE POLICY "Allow public read access to violation reports" 
 ON public.violation_reports FOR SELECT USING (true);
 
 -- Allow inserting violation reports
+DROP POLICY IF EXISTS "Allow public insert to violation reports" ON public.violation_reports;
 CREATE POLICY "Allow public insert to violation reports" 
 ON public.violation_reports FOR INSERT WITH CHECK (true);
 
 -- Allow updating vehicle status
+DROP POLICY IF EXISTS "Allow public update to vehicles" ON public.bajaj_vehicles;
 CREATE POLICY "Allow public update to vehicles" 
 ON public.bajaj_vehicles FOR UPDATE USING (true);
 

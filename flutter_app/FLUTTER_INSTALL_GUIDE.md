@@ -8,10 +8,10 @@ This guide walks you through setting up **Supabase**, running the **Flutter app*
 
 1. Go to [supabase.com](https://supabase.com) and create a free project named `gondar-traffic`.
 2. In the Supabase Dashboard, click on **SQL Editor** on the left menu.
-3. Open `flutter_app/supabase_schema.sql` (or copy its contents), paste it into the SQL editor, and click **Run**.
-   - This creates the `bajaj_vehicles`, `officers` and `violation_reports` tables with starter data.
-4. Then run `supabase/migrations/20261012000000_shared_realtime_backend.sql` the same way. **Required** –
-   it turns on realtime sync with the ERP website, the inspections log and secure (hashed) login.
+3. Paste the **whole** file `supabase/migrations/20261012000000_shared_realtime_backend.sql` into the SQL editor
+   and click **Run**. **Required** – it creates all tables, realtime sync with the ERP website, the inspections
+   log and secure (hashed) login.
+4. Optional: run `flutter_app/supabase_schema.sql` the same way to add sample vehicles and reports.
 5. Go to **Project Settings** (gear icon) → **API**:
    - Copy **Project URL** (e.g. `https://xxxx.supabase.co`)
    - Copy **Project API Key (anon/public)**.
