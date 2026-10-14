@@ -16,3 +16,6 @@ flutter_app/android/local.properties
 flutter_app/android/.gradle/
 *.iml
 flutter_app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
+# Flutter app Supabase settings (copy from env.example.json)
+flutter_app/env.json

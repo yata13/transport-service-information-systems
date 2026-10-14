@@ -7,9 +7,17 @@ import 'services/supabase_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Supabase Credentials
-  const supabaseUrl = 'https://fvqmdcwvtreqkxsrgisi.supabase.co';
-  const supabaseKey = 'sb_publishable_LwXB0Bn1J3QkmwZCinCWkQ_gfVyzdpz';
+  // Supabase credentials. Override with
+  //   flutter run --dart-define-from-file=env.json
+  // (copy env.example.json to env.json); must match the website's .env.
+  const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://fvqmdcwvtreqkxsrgisi.supabase.co',
+  );
+  const supabaseKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: 'sb_publishable_LwXB0Bn1J3QkmwZCinCWkQ_gfVyzdpz',
+  );
 
   try {
     if (!supabaseUrl.contains('YOUR_SUPABASE') && supabaseUrl.isNotEmpty) {

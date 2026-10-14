@@ -34,6 +34,10 @@ Optional: `flutter_app/supabase_schema.sql` adds sample vehicles and reports.
 > ```
 > New officers can be added from the website: **Officers & Workforce → Add Officer**.
 
+> Ran the SQL in the **wrong** Supabase project? Run `supabase/rollback_traffic_schema.sql`
+> **in that wrong project** to remove the traffic tables and functions again. It only drops tables
+> whose columns match the traffic ones, and keeps everything else.
+
 ## 2. Website
 
 ```bash
@@ -57,6 +61,10 @@ cd flutter_app
 flutter pub get
 flutter run                  # or: flutter build apk --release
 ```
+
+To point the app at another Supabase project (use the same one as the website's `.env`),
+copy `flutter_app/env.example.json` to `flutter_app/env.json`, fill it in, and add
+`--dart-define-from-file=env.json` to `flutter run` / `flutter build apk`.
 
 If the phone has no network, reports and inspections are stored on the phone and uploaded
 automatically when the connection returns (shown as "Not synced yet" in the history list).
