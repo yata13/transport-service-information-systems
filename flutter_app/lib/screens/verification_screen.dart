@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/supabase_service.dart';
 import '../models/bajaj_vehicle.dart';
 import '../widgets/verifying_progress_dialog.dart';
+import 'qr_scanner_screen.dart';
 import 'validity_result_screen.dart';
 import 'vehicle_not_found_screen.dart';
 
@@ -50,7 +51,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   void _goToStep2WithDigitalId(String did) async {
     final clean = did.trim();
-    // Guard against double taps: look up once.
+    // Guard against double submits: look up once.
     if (clean.isEmpty || _isLookingUp) return;
     _isLookingUp = true;
 
@@ -69,6 +70,15 @@ class _VerificationScreenState extends State<VerificationScreen> {
       _physicalPlateController.clear();
       _currentStep = 2; // CHANGE PAGE TO STEP 2 (Plate Number Only)!
     });
+  }
+
+  Future<void> _openScanner() async {
+    final value = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    if (!mounted || value == null) return;
+    _didController.text = value;
+    _goToStep2WithDigitalId(value);
   }
 
   void _runFinalVerification() async {
@@ -246,7 +256,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'የዲጂታል መታወቂያ ቁጥር በማስገባት ፍተሻ ይጀምሩ',
+                              'የዲጂታል መታወቂያ / QR ኮድ ብቻ በመቃኘት ፍተሻ ይጀምሩ',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -257,6 +267,22 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 14),
+
+                    // Opens the full-screen camera QR scanner
+                    ElevatedButton.icon(
+                      onPressed: _openScanner,
+                      icon: const Icon(Icons.qr_code_scanner, size: 18),
+                      label: const Text('የካሜራ ስካነር ክፈት (Scan QR with Camera)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF185A9D),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1),
                     const SizedBox(height: 14),
 
                     // Manual DID Input
@@ -441,7 +467,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                     OutlinedButton.icon(
                       onPressed: () => setState(() => _currentStep = 1),
                       icon: const Icon(Icons.arrow_back, size: 16),
-                      label: const Text('ወደ ደረጃ 1 ተመለስ (Back to Step 1)'),
+                      label: const Text('ወደ ደረጃ 1 ተመለስ (Back to Scan)'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
