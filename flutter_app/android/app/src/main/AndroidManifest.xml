@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.gondar_traffic_bajaj">
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="የጎንደር ትራፊክ ባጃጅ"

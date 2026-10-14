@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Camera, QrCode, X, AlertCircle, ArrowRight, ArrowLeft, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { QrCode, AlertCircle, ArrowRight, ArrowLeft, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react';
 import QRCode from 'qrcode';
 import { BajajVehicle } from '../types';
 import { sounds } from '../utils/sound';
@@ -48,15 +48,10 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
   const [scannedDigitalId, setScannedDigitalId] = useState(initialDigitalId || '');
   const [matchedVehicle, setMatchedVehicle] = useState<BajajVehicle | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Step 2 State: Plate Number Only
   const [physicalPlateInput, setPhysicalPlateInput] = useState('');
   const [step2Error, setStep2Error] = useState<string | null>(null);
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   // Generate dynamic QR code preview based on current Digital ID
   useEffect(() => {
@@ -75,42 +70,12 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
       .catch(() => {});
   }, [digitalIdInput]);
 
-  // Handle live camera scanner
-  const startCameraScan = async () => {
-    setIsScanning(true);
-    setCameraError(null);
-    sounds.playScanBeep();
-
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      }
-    } catch {
-      setCameraError('የካሜራ ፈቃድ ያስፈልጋል (Camera access not granted)');
-    }
-  };
-
-  const stopCameraScan = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setIsScanning(false);
-  };
-
-  // Called when QR is detected or user submits Step 1
+  // Called when the user submits Step 1
   const proceedToStep2WithDigitalId = (didValue: string) => {
     const clean = didValue.trim();
     if (!clean) return;
 
     sounds.playScanBeep();
-    stopCameraScan();
 
     // Find in registry (no fallback: an unknown ID must stay unknown)
     const match = findVehicle(database, clean);
@@ -163,7 +128,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
             </h2>
             <span className="text-[11px] font-semibold text-slate-500 block leading-none">
               {currentStep === 1
-                ? 'Step 1: Scan Digital ID / QR Code Only'
+                ? 'Step 1: Enter Digital ID'
                 : 'Step 2: Enter Physical Plate on Vehicle'}
             </span>
           </div>
@@ -191,57 +156,9 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
             <div>
               <p className="font-bold">ዲጂታል መታወቂያ ወይም የፈቃድ QR ኮድ ብቻ ይቃኙ</p>
               <p className="text-[11px] text-slate-600 mt-0.5">
-                በመጀመሪያ ደረጃ የባጃጁን ዲጂታል ፈቃድ QR ኮድ ካሜራውን በመክፈት ይቃኙ ወይም መታወቂያውን ያስገቡ።
+                በመጀመሪያ ደረጃ የባጃጁን ዲጂታል መታወቂያ ቁጥር ያስገቡ።
               </p>
             </div>
-          </div>
-
-          {/* Live Camera Scanner Box */}
-          <div className="bg-slate-900 rounded-xl overflow-hidden p-3 text-center text-white relative">
-            {isScanning ? (
-              <div className="relative aspect-video max-h-48 rounded-lg overflow-hidden bg-black flex items-center justify-center">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-                {/* Scanner Target Box */}
-                <div className="absolute inset-0 border-2 border-emerald-400/80 m-4 rounded-lg pointer-events-none animate-pulse flex items-center justify-center">
-                  <div className="w-full h-0.5 bg-emerald-400 shadow-[0_0_8px_#34d399] animate-bounce" />
-                </div>
-                <button
-                  onClick={stopCameraScan}
-                  className="absolute top-2 right-2 bg-slate-800/80 hover:bg-slate-700 p-1.5 rounded-full text-white"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ) : (
-              <div className="py-4">
-                <div className="w-16 h-16 rounded-2xl bg-white/10 mx-auto flex items-center justify-center border border-white/20 mb-2">
-                  <Camera size={32} className="text-amber-400" />
-                </div>
-                <p className="text-xs font-semibold text-slate-200">የቀጥታ ካሜራ ስካነር</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  የባጃጁን ፈቃድ QR ኮድ በካሜራ ለመቃኘት ከታች ያለውን ቁልፍ ይጫኑ
-                </p>
-                <button
-                  type="button"
-                  onClick={startCameraScan}
-                  className="mt-3 py-2 px-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 shadow-md transition"
-                >
-                  <Camera size={14} />
-                  <span>ካሜራ ክፈት (Start Camera Scan)</span>
-                </button>
-              </div>
-            )}
-
-            {cameraError && (
-              <div className="mt-2 p-2 bg-red-900/40 border border-red-700/50 rounded text-[11px] text-red-200">
-                {cameraError}
-              </div>
-            )}
           </div>
 
           {/* Manual Digital ID Input Section */}
@@ -386,7 +303,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
                 className="w-full py-2.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
               >
                 <ArrowLeft size={14} />
-                <span>ወደ ደረጃ 1 ተመለስ (Back to Scan)</span>
+                <span>ወደ ደረጃ 1 ተመለስ (Back to Step 1)</span>
               </button>
             </div>
           </form>

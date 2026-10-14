@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/supabase_service.dart';
 import '../models/bajaj_vehicle.dart';
 import '../widgets/verifying_progress_dialog.dart';
+import 'qr_scanner_screen.dart';
 import 'validity_result_screen.dart';
 import 'vehicle_not_found_screen.dart';
 
@@ -31,7 +31,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   String _scannedDigitalId = '';
   BajajVehicle? _matchedVehicle;
-  bool _isScannerOpen = false;
   bool _isLookingUp = false;
   List<BajajVehicle> _recentVehicles = [];
 
@@ -52,12 +51,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   void _goToStep2WithDigitalId(String did) async {
     final clean = did.trim();
-    // The scanner reports the same code on every camera frame: look up once.
+    // Guard against double submits: look up once.
     if (clean.isEmpty || _isLookingUp) return;
     _isLookingUp = true;
 
     setState(() {
-      _isScannerOpen = false;
       _scannedDigitalId = clean.split('|').first.trim();
     });
 
@@ -72,6 +70,15 @@ class _VerificationScreenState extends State<VerificationScreen> {
       _physicalPlateController.clear();
       _currentStep = 2; // CHANGE PAGE TO STEP 2 (Plate Number Only)!
     });
+  }
+
+  Future<void> _openScanner() async {
+    final value = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    if (!mounted || value == null) return;
+    _didController.text = value;
+    _goToStep2WithDigitalId(value);
   }
 
   void _runFinalVerification() async {
@@ -262,17 +269,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Live Camera Scanner Toggle
+                    // Opens the full-screen camera QR scanner
                     ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() => _isScannerOpen = !_isScannerOpen);
-                      },
-                      icon: Icon(_isScannerOpen ? Icons.videocam_off : Icons.camera_alt, size: 18),
-                      label: Text(
-                        _isScannerOpen
-                            ? 'ካሜራ ዝጋ (Close Camera)'
-                            : 'የካሜራ ስካነር ክፈት (Live Camera QR Scan)',
-                      ),
+                      onPressed: _openScanner,
+                      icon: const Icon(Icons.qr_code_scanner, size: 18),
+                      label: const Text('የካሜራ ስካነር ክፈት (Scan QR with Camera)'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF185A9D),
                         foregroundColor: Colors.white,
@@ -280,26 +281,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
-                    if (_isScannerOpen) ...[
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 140,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: MobileScanner(
-                            onDetect: (capture) {
-                              final barcodes = capture.barcodes;
-                              for (final b in barcodes) {
-                                if (b.rawValue != null && !_isLookingUp) {
-                                  _goToStep2WithDigitalId(b.rawValue!);
-                                  break;
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 16),
                     const Divider(height: 1),
                     const SizedBox(height: 14),
