@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/supabase_service.dart';
 import '../models/bajaj_vehicle.dart';
 import '../widgets/verifying_progress_dialog.dart';
@@ -31,7 +30,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   String _scannedDigitalId = '';
   BajajVehicle? _matchedVehicle;
-  bool _isScannerOpen = false;
   bool _isLookingUp = false;
   List<BajajVehicle> _recentVehicles = [];
 
@@ -52,12 +50,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   void _goToStep2WithDigitalId(String did) async {
     final clean = did.trim();
-    // The scanner reports the same code on every camera frame: look up once.
+    // Guard against double taps: look up once.
     if (clean.isEmpty || _isLookingUp) return;
     _isLookingUp = true;
 
     setState(() {
-      _isScannerOpen = false;
       _scannedDigitalId = clean.split('|').first.trim();
     });
 
@@ -249,7 +246,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'የዲጂታል መታወቂያ / QR ኮድ ብቻ በመቃኘት ፍተሻ ይጀምሩ',
+                              'የዲጂታል መታወቂያ ቁጥር በማስገባት ፍተሻ ይጀምሩ',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -260,48 +257,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-
-                    // Live Camera Scanner Toggle
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() => _isScannerOpen = !_isScannerOpen);
-                      },
-                      icon: Icon(_isScannerOpen ? Icons.videocam_off : Icons.camera_alt, size: 18),
-                      label: Text(
-                        _isScannerOpen
-                            ? 'ካሜራ ዝጋ (Close Camera)'
-                            : 'የካሜራ ስካነር ክፈት (Live Camera QR Scan)',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF185A9D),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                    if (_isScannerOpen) ...[
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 140,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: MobileScanner(
-                            onDetect: (capture) {
-                              final barcodes = capture.barcodes;
-                              for (final b in barcodes) {
-                                if (b.rawValue != null && !_isLookingUp) {
-                                  _goToStep2WithDigitalId(b.rawValue!);
-                                  break;
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    const Divider(height: 1),
                     const SizedBox(height: 14),
 
                     // Manual DID Input
@@ -486,7 +441,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                     OutlinedButton.icon(
                       onPressed: () => setState(() => _currentStep = 1),
                       icon: const Icon(Icons.arrow_back, size: 16),
-                      label: const Text('ወደ ደረጃ 1 ተመለስ (Back to Scan)'),
+                      label: const Text('ወደ ደረጃ 1 ተመለስ (Back to Step 1)'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
