@@ -12,7 +12,7 @@ class QrScannerScreen extends StatefulWidget {
   State<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingObserver {
+class _QrScannerScreenState extends State<QrScannerScreen> {
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
@@ -22,32 +22,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
   bool _handled = false;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Release the camera while the app is in the background, and take it
-    // back on return; otherwise the preview stays black after resuming.
-    if (!_controller.value.isInitialized) return;
-    switch (state) {
-      case AppLifecycleState.resumed:
-        unawaited(_controller.start());
-        break;
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.paused:
-      case AppLifecycleState.hidden:
-      case AppLifecycleState.detached:
-        unawaited(_controller.stop());
-        break;
-    }
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     unawaited(_controller.dispose());
     super.dispose();
   }
@@ -64,7 +39,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     }
   }
 
-  Widget _buildError(BuildContext context, MobileScannerException error, Widget? child) {
+  Widget _buildError(BuildContext context, MobileScannerException error) {
     final String message;
     switch (error.errorCode) {
       case MobileScannerErrorCode.permissionDenied:
@@ -131,6 +106,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
             controller: _controller,
             onDetect: _onDetect,
             errorBuilder: _buildError,
+            // The widget stops the camera when the app goes to the
+            // background and restarts it on return.
           ),
           IgnorePointer(
             child: Center(
