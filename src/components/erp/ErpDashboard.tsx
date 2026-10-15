@@ -5,7 +5,6 @@ import {
   AlertTriangle, 
   ShieldAlert, 
   Receipt, 
-  QrCode, 
   ArrowUpRight, 
   Building2, 
   MapPin, 
@@ -98,14 +97,6 @@ export const ErpDashboard: React.FC<ErpDashboardProps> = ({
 
         {/* Header Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => onNavigateTab('verification')}
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <QrCode size={15} className="text-[#0C355B]" />
-            <span>የመንገድ ላይ ፍተሻ (Roadside Verifier)</span>
-          </button>
-
           <button
             onClick={onOpenNewVehicleModal}
             className="px-4 py-2 bg-[#0C355B] hover:bg-[#092B4B] text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5 transition cursor-pointer"

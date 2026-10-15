@@ -7,7 +7,6 @@ import {
   Plus, 
   Eye, 
   FileText, 
-  QrCode, 
   Phone, 
   MapPin, 
   Filter,
@@ -21,7 +20,6 @@ import { sounds } from '../utils/sound';
 interface VehiclesListScreenProps {
   database: BajajVehicle[];
   onSelectVehicle: (bajaj: BajajVehicle) => void;
-  onVerifyVehicle: (bajaj: BajajVehicle) => void;
   onOpenNewVehicleModal?: () => void;
   initialSearch?: string;
 }
@@ -29,7 +27,6 @@ interface VehiclesListScreenProps {
 export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
   database,
   onSelectVehicle,
-  onVerifyVehicle,
   onOpenNewVehicleModal,
   initialSearch = '',
 }) => {
@@ -260,13 +257,6 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
                             title="ሙሉ መረጃ እይ (View Dossier)"
                           >
                             <Eye size={14} />
-                          </button>
-                          <button
-                            onClick={() => onVerifyVehicle(v)}
-                            className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 transition cursor-pointer"
-                            title="ፈጣን ፍተሻ አድርግ (Verify Plate & QR)"
-                          >
-                            <QrCode size={14} />
                           </button>
                         </div>
                       </td>

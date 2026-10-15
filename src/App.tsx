@@ -6,66 +6,15 @@ import { VehiclesListScreen } from './components/VehiclesListScreen';
 import { ReportsScreen } from './components/ReportsScreen';
 import { UsersScreen } from './components/UsersScreen';
 import { SettingsScreen } from './components/SettingsScreen';
-import { VerificationScreen } from './components/VerificationScreen';
-import { VerifyingProgressModal } from './components/VerifyingProgressModal';
-import { ValidityResultScreen } from './components/ValidityResultScreen';
 import { VehicleDetailsScreen } from './components/VehicleDetailsScreen';
 import { ViolationReportScreen } from './components/ViolationReportScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { PdfPermitModal } from './components/PdfPermitModal';
-import { BajajVehicle, InspectionResult, ReportStatus, SessionUser, TrafficViolationReport } from './types';
+import { BajajVehicle, ReportStatus, SessionUser, TrafficViolationReport } from './types';
 import { sounds } from './utils/sound';
 import { useLiveData } from './hooks/useLiveData';
-import { insertInspection, insertReport, insertVehicle, updateReportStatus } from './lib/api';
+import { insertReport, insertVehicle, updateReportStatus } from './lib/api';
 import { clearSession, loadSession, saveSession } from './lib/session';
-
-interface ActiveQuery {
-  type: 'digitalId' | 'qr';
-  digitalId: string;
-  physicalPlate: string;
-  value: string;
-  simulatedBajaj?: BajajVehicle;
-  isMismatch?: boolean;
-  isNotFound?: boolean;
-}
-
-function inspectionResultFor(vehicle: BajajVehicle, isMismatch: boolean, isNotFound: boolean): InspectionResult {
-  if (isNotFound) return 'NOT_FOUND';
-  if (isMismatch) return 'MISMATCH';
-  if (vehicle.isBlacklisted || vehicle.status === 'SUSPENDED' || vehicle.status === 'ILLEGAL') return 'SUSPENDED';
-  if (vehicle.status === 'EXPIRED') return 'EXPIRED';
-  return 'VALID';
-}
-
-/** Placeholder record shown when a scanned ID is not in the registry. */
-function unregisteredVehicle(digitalId: string): BajajVehicle {
-  return {
-    id: `unregistered-${digitalId}`,
-    digitalId,
-    plateNumber: '-',
-    vin: '-',
-    vehicleType: 'Bajaj (ባጃጅ)',
-    bajajModel: '-',
-    bajajAssociation: '-',
-    color: '-',
-    owner: 'ያልታወቀ ግለሰብ (Unknown)',
-    ownerPhone: '-',
-    driverName: 'ያልተመዘገበ አሽከርካሪ',
-    driverPhone: '-',
-    driverPhoto: '',
-    kebele: 'ያልታወቀ',
-    address: 'በጎንደር ከተማ መዝገብ ውስጥ የለም',
-    permitNo: 'NO-PERMIT',
-    issueDate: '-',
-    expiryDate: '-',
-    authorizedArea: 'ያልተፈቀደ (Illegal)',
-    status: 'ILLEGAL',
-    isBlacklisted: true,
-    blacklistReason: 'በጎንደር ትራንስፖርት ዳታቤዝ ውስጥ ያልተገኘ ህገወጥ ተሽከርካሪ (Not in registry)',
-    qrCodeValue: digitalId,
-    registeredCity: 'Gondar / ጎንደር',
-  };
-}
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(() => loadSession());
@@ -79,11 +28,7 @@ export default function App() {
   const [language, setLanguage] = useState<'am' | 'en' | 'dual'>('dual');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
-  // Active Verification state (for Roadside desk inside ERP)
-  const [activeQuery, setActiveQuery] = useState<ActiveQuery | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<BajajVehicle | null>(null);
-  const [isMismatchFlag, setIsMismatchFlag] = useState<boolean>(false);
-  const [physicalPlateEntered, setPhysicalPlateEntered] = useState<string>('');
   const [showPdfModal, setShowPdfModal] = useState<boolean>(false);
 
   const handleLoginSuccess = (user: SessionUser) => {
@@ -96,32 +41,6 @@ export default function App() {
     clearSession();
     setCurrentUser(null);
     sounds.playScanBeep();
-  };
-
-  const handleStartVerification = (query: ActiveQuery) => {
-    setActiveQuery(query);
-    setPhysicalPlateEntered(query.physicalPlate);
-    setCurrentTab('progress');
-  };
-
-  const handleVerificationComplete = (bajaj: BajajVehicle, isMismatch: boolean) => {
-    const isNotFound = !!activeQuery?.isNotFound;
-    setSelectedVehicle(bajaj);
-    setIsMismatchFlag(isMismatch);
-    setCurrentTab('validityResult');
-
-    if (currentUser) {
-      insertInspection({
-        digitalId: activeQuery?.digitalId || bajaj.digitalId,
-        plateChecked: activeQuery?.physicalPlate || '',
-        registeredPlate: isNotFound ? '' : bajaj.plateNumber,
-        result: inspectionResultFor(bajaj, isMismatch, isNotFound),
-        officerName: currentUser.name,
-        badgeNumber: currentUser.badge,
-        location: 'ERP HQ Desk',
-        source: 'web',
-      }).catch((err) => console.warn(err));
-    }
   };
 
   // Throws on failure so the modal can show the error and stay open.
@@ -176,10 +95,6 @@ export default function App() {
         database={vehicles}
         initialSearch={globalSearch}
         onSelectVehicle={openVehicle}
-        onVerifyVehicle={(vehicle) => {
-          setSelectedVehicle(vehicle);
-          setCurrentTab('verification');
-        }}
         onOpenNewVehicleModal={() => setIsNewVehicleModalOpen(true)}
       />
     );
@@ -207,40 +122,10 @@ export default function App() {
         onRefresh={live.refresh}
       />
     );
-  } else if (currentTab === 'verification') {
-    page = (
-      <VerificationScreen
-        onStartVerification={handleStartVerification}
-        database={vehicles}
-        initialDigitalId={selectedVehicle?.digitalId}
-      />
-    );
-  } else if (currentTab === 'progress' && activeQuery) {
-    page = (
-      <VerifyingProgressModal
-        query={{
-          ...activeQuery,
-          simulatedBajaj: activeQuery.simulatedBajaj || unregisteredVehicle(activeQuery.digitalId),
-        }}
-        onComplete={handleVerificationComplete}
-      />
-    );
-  } else if (currentTab === 'validityResult' && selectedVehicle) {
-    page = (
-      <ValidityResultScreen
-        vehicle={selectedVehicle}
-        isClash={isMismatchFlag}
-        physicalPlateChecked={physicalPlateEntered}
-        onViewDetails={() => setCurrentTab('vehicleDetails')}
-        onNewCheck={() => setCurrentTab('verification')}
-        onOpenReport={() => setCurrentTab('violationReport')}
-      />
-    );
   } else if (currentTab === 'vehicleDetails' && selectedVehicle) {
     page = (
       <VehicleDetailsScreen
         vehicle={selectedVehicle}
-        onNewCheck={() => setCurrentTab('verification')}
         onOpenReport={() => setCurrentTab('violationReport')}
         onViewPdf={() => setShowPdfModal(true)}
         onBack={() => setCurrentTab('vehicles')}
@@ -250,9 +135,7 @@ export default function App() {
     page = (
       <ViolationReportScreen
         vehicle={selectedVehicle}
-        isMismatch={isMismatchFlag}
-        physicalPlate={physicalPlateEntered}
-        onBack={() => setCurrentTab('validityResult')}
+        onBack={() => setCurrentTab('vehicleDetails')}
         onSubmitReport={handleSubmitViolationReport}
         inspectorName={currentUser.name}
       />
