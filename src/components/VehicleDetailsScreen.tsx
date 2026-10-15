@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   FileText, 
-  RefreshCw, 
   AlertTriangle, 
   Info, 
   Phone, 
@@ -16,7 +15,6 @@ import { sounds } from '../utils/sound';
 
 interface VehicleDetailsScreenProps {
   vehicle: BajajVehicle;
-  onNewCheck: () => void;
   onOpenReport: () => void;
   onViewPdf: () => void;
   onBack?: () => void;
@@ -24,7 +22,6 @@ interface VehicleDetailsScreenProps {
 
 export const VehicleDetailsScreen: React.FC<VehicleDetailsScreenProps> = ({
   vehicle,
-  onNewCheck,
   onOpenReport,
   onViewPdf,
   onBack
@@ -251,7 +248,7 @@ export const VehicleDetailsScreen: React.FC<VehicleDetailsScreenProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+        <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-1 gap-2">
           <button
             type="button"
             onClick={() => {
@@ -264,17 +261,6 @@ export const VehicleDetailsScreen: React.FC<VehicleDetailsScreenProps> = ({
             <span className="truncate">የፈቃድ ሰነድ (PDF)</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              sounds.playScanBeep();
-              onNewCheck();
-            }}
-            className="py-2.5 px-2 bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 border border-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all"
-          >
-            <RefreshCw size={14} />
-            <span className="truncate">አዲስ ፍተሻ (New Check)</span>
-          </button>
         </div>
 
         {/* Secondary Option: Flag Violation or Fine */}

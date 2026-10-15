@@ -5,7 +5,6 @@ import {
   Receipt, 
   Users, 
   Settings as SettingsIcon, 
-  QrCode, 
   Search, 
   Bell, 
   Plus, 
@@ -74,7 +73,6 @@ export const ErpLayout: React.FC<ErpLayoutProps> = ({
       title: 'ጠቅላላ መረጃ (Overview)',
       items: [
         { id: 'dashboard', labelAm: 'ማዕከላዊ ዳሽቦርድ', labelEn: 'Executive Dashboard', icon: LayoutDashboard },
-        { id: 'verification', labelAm: 'የመንገድ ላይ ፍተሻ', labelEn: 'Roadside Verifier (2-Step)', icon: QrCode },
       ],
     },
     {

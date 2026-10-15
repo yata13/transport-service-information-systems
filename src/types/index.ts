@@ -56,9 +56,6 @@ export type ReportStatus = 'SUBMITTED' | 'PAID' | 'IMPOUNDED' | 'RESOLVED';
 export type NavScreen = 
   | 'login'
   | 'dashboard'
-  | 'verification'
-  | 'progress'
-  | 'validityResult'
   | 'vehicleDetails'
   | 'violationReport'
   | 'vehicles'
