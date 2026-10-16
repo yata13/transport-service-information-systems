@@ -12,10 +12,13 @@ import {
   Filter,
   CheckCircle2,
   AlertTriangle,
-  ShieldAlert
+  ShieldAlert,
+  Printer
 } from 'lucide-react';
 import { BajajVehicle } from '../types';
 import { sounds } from '../utils/sound';
+import { QrCardModal } from './QrCardModal';
+import { printQrCards } from '../lib/qr';
 
 interface VehiclesListScreenProps {
   database: BajajVehicle[];
@@ -38,6 +41,12 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
   }, [initialSearch]);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'SUSPENDED'>('ALL');
   const [filterAssociation, setFilterAssociation] = useState<string>('ALL');
+  const [qrVehicle, setQrVehicle] = useState<BajajVehicle | null>(null);
+
+  const printAllQr = () => {
+    if (filtered.length === 0) return;
+    printQrCards(filtered).catch((e) => window.alert(e instanceof Error ? e.message : String(e)));
+  };
 
   const filtered = database.filter((item) => {
     const q = searchTerm.toLowerCase();
@@ -96,6 +105,15 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
           >
             <Download size={15} />
             <span>ሪፖርት አውርድ (Export CSV)</span>
+          </button>
+
+          <button
+            onClick={printAllQr}
+            disabled={filtered.length === 0}
+            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+          >
+            <Printer size={15} />
+            <span>ሁሉንም QR አትም (Print all QR · {filtered.length})</span>
           </button>
 
           {onOpenNewVehicleModal && (
@@ -258,6 +276,13 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
                           >
                             <Eye size={14} />
                           </button>
+                          <button
+                            onClick={() => setQrVehicle(v)}
+                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 transition cursor-pointer"
+                            title="QR ኮድ አሳይ / አትም (Show / Print QR)"
+                          >
+                            <Printer size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -268,6 +293,8 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
           </table>
         </div>
       </div>
+
+      {qrVehicle && <QrCardModal vehicle={qrVehicle} onClose={() => setQrVehicle(null)} />}
     </div>
   );
 };

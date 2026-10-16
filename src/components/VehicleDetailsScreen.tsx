@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FileText, 
   AlertTriangle, 
@@ -8,10 +8,14 @@ import {
   User, 
   Check, 
   ArrowLeft,
-  Building2
+  Building2,
+  Printer,
+  Download,
+  QrCode
 } from 'lucide-react';
 import { BajajVehicle } from '../types';
 import { sounds } from '../utils/sound';
+import { qrDataUrl, qrPayload, printQrCards } from '../lib/qr';
 
 interface VehicleDetailsScreenProps {
   vehicle: BajajVehicle;
@@ -27,6 +31,22 @@ export const VehicleDetailsScreen: React.FC<VehicleDetailsScreenProps> = ({
   onBack
 }) => {
   const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
+  const [qrUrl, setQrUrl] = useState('');
+
+  useEffect(() => {
+    qrDataUrl(vehicle, 480).then(setQrUrl).catch(() => setQrUrl(''));
+  }, [vehicle]);
+
+  const downloadQr = () => {
+    const a = document.createElement('a');
+    a.href = qrUrl;
+    a.download = `QR_${vehicle.plateNumber.replace(/[^A-Za-z0-9-]/g, '_')}.png`;
+    a.click();
+  };
+
+  const printQr = () => {
+    printQrCards([vehicle]).catch((e) => window.alert(e instanceof Error ? e.message : String(e)));
+  };
 
   const isExpired = vehicle.status === 'EXPIRED';
   const primaryPhone = vehicle.driverPhone || vehicle.ownerPhone;
@@ -207,6 +227,44 @@ export const VehicleDetailsScreen: React.FC<VehicleDetailsScreenProps> = ({
           <span className="font-mono font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
             {vehicle.plateNumber}
           </span>
+        </div>
+      </div>
+
+      {/* User QR Code — scanned by the mobile app */}
+      <div className="bg-white rounded-xl shadow-md border border-slate-200/90 p-3.5 mb-3 flex items-center gap-3.5">
+        {qrUrl ? (
+          <img
+            src={qrUrl}
+            alt={`QR ${vehicle.plateNumber}`}
+            className="w-32 h-32 shrink-0 rounded-lg border border-slate-200"
+          />
+        ) : (
+          <div className="w-32 h-32 shrink-0 rounded-lg bg-slate-100 animate-pulse" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 text-sm font-bold text-[#0C355B]">
+            <QrCode size={16} /> የተጠቃሚ QR ኮድ
+          </div>
+          <p className="text-[10px] text-slate-500 font-medium">User QR Code · scan with the mobile app</p>
+          <p className="mt-1 text-[10px] font-mono text-slate-400 break-all">{qrPayload(vehicle)}</p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={printQr}
+              disabled={!qrUrl}
+              className="py-1.5 px-3 bg-[#0C355B] hover:bg-[#092B4B] text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+            >
+              <Printer size={13} /> አትም (Print)
+            </button>
+            <button
+              type="button"
+              onClick={downloadQr}
+              disabled={!qrUrl}
+              className="py-1.5 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-[11px] font-semibold flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+            >
+              <Download size={13} /> PNG
+            </button>
+          </div>
         </div>
       </div>
 

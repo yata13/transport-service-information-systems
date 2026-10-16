@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Printer, Download, CheckCircle, ShieldCheck, Phone, MapPin, User } from 'lucide-react';
 import { BajajVehicle } from '../types';
 import { ShieldLogo } from './ShieldLogo';
+import { qrDataUrl } from '../lib/qr';
 
 interface PdfPermitModalProps {
   vehicle: BajajVehicle;
@@ -14,6 +15,11 @@ export const PdfPermitModal: React.FC<PdfPermitModalProps> = ({ vehicle, onClose
   };
 
   const primaryPhone = vehicle.driverPhone || vehicle.ownerPhone;
+
+  const [qrUrl, setQrUrl] = useState('');
+  useEffect(() => {
+    qrDataUrl(vehicle, 240).then(setQrUrl).catch(() => setQrUrl(''));
+  }, [vehicle]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto">
@@ -145,6 +151,10 @@ export const PdfPermitModal: React.FC<PdfPermitModalProps> = ({ vehicle, onClose
                 <CheckCircle size={12} /> በጎንደር ትራፊክ ቁጥጥር የተረጋገጠ
               </p>
             </div>
+
+            {qrUrl && (
+              <img src={qrUrl} alt="Permit QR" className="w-20 h-20 border border-slate-300 rounded bg-white" />
+            )}
 
             {/* Official Stamp Simulation */}
             <div className="w-20 h-20 rounded-full border-2 border-dashed border-blue-700/80 p-1 flex items-center justify-center text-center rotate-[-8deg] bg-blue-50/40">
