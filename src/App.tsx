@@ -10,6 +10,7 @@ import { VehicleDetailsScreen } from './components/VehicleDetailsScreen';
 import { ViolationReportScreen } from './components/ViolationReportScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { PdfPermitModal } from './components/PdfPermitModal';
+import { QrCardModal } from './components/QrCardModal';
 import { BajajVehicle, ReportStatus, SessionUser, TrafficViolationReport } from './types';
 import { sounds } from './utils/sound';
 import { useLiveData } from './hooks/useLiveData';
@@ -23,6 +24,7 @@ export default function App() {
 
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isNewVehicleModalOpen, setIsNewVehicleModalOpen] = useState<boolean>(false);
+  const [newQrVehicle, setNewQrVehicle] = useState<BajajVehicle | null>(null);
   const [globalSearch, setGlobalSearch] = useState<string>('');
 
   const [language, setLanguage] = useState<'am' | 'en' | 'dual'>('dual');
@@ -47,6 +49,8 @@ export default function App() {
   const handleAddNewVehicle = async (newVehicle: BajajVehicle) => {
     const saved = await insertVehicle(newVehicle);
     live.applyVehicle(saved);
+    // Show the new user's QR right away so it can be printed and scanned by the app.
+    setNewQrVehicle(saved);
   };
 
   // Throws on failure so the report form can show the error.
@@ -169,6 +173,8 @@ export default function App() {
         onClose={() => setIsNewVehicleModalOpen(false)}
         onAddVehicle={handleAddNewVehicle}
       />
+
+      {newQrVehicle && <QrCardModal vehicle={newQrVehicle} onClose={() => setNewQrVehicle(null)} />}
 
       {/* Printable PDF Permit Modal */}
       {showPdfModal && selectedVehicle && (
