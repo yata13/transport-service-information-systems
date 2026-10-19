@@ -16,6 +16,7 @@ import {
 import { BajajVehicle } from '../types';
 import { sounds } from '../utils/sound';
 import { qrDataUrl, qrPayload, printQrCards } from '../lib/qr';
+import { formatTimestamp } from '../lib/api';
 
 interface VehicleDetailsScreenProps {
   vehicle: BajajVehicle;
@@ -67,6 +68,7 @@ export const VehicleDetailsScreen: React.FC<VehicleDetailsScreenProps> = ({
     { labelAm: 'የመኖሪያ አድራሻ', labelEn: 'Address', value: vehicle.address || 'ጎንደር ከተማ' },
     { labelAm: 'የፈቃድ ቁጥር', labelEn: 'Permit No', value: vehicle.permitNo },
     { labelAm: 'የተሰጠበት ቀን', labelEn: 'Issue Date', value: vehicle.issueDate },
+    { labelAm: 'የተመዘገበበት ጊዜ', labelEn: 'Registered At', value: vehicle.createdAt ? formatTimestamp(vehicle.createdAt) : '-' },
     { labelAm: 'የሚያበቃበት ቀን', labelEn: 'Expiry Date', value: vehicle.expiryDate, highlight: isExpired },
     { 
       labelAm: 'የተፈቀደ ዞን', 

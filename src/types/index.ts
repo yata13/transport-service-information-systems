@@ -24,6 +24,7 @@ export interface BajajVehicle {
   notes?: string;
   qrCodeValue: string;
   registeredCity: string; // ጎንደር (Gondar)
+  createdAt?: string; // ISO timestamp: when it was registered
 }
 
 export interface VerificationCheckStep {
@@ -87,12 +88,15 @@ export interface Officer {
   phoneNumber: string;
   assignedZone: string;
   isActive: boolean;
+  isAdmin: boolean;
+  createdAt?: string; // ISO timestamp: when it was registered
 }
 
 export interface SessionUser {
   name: string;
   badge: string;
   role: string;
+  token: string; // admin session token, checked by the server
 }
 
 // live = realtime socket up; polling = data loads but realtime is blocked

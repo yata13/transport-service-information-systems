@@ -11,7 +11,7 @@ import {
 
 // Column list for officers: password_hash is not readable by the public API.
 const OFFICER_COLUMNS =
-  'id, username, full_name, badge_number, role, phone_number, assigned_zone, is_active';
+  'id, username, full_name, badge_number, role, phone_number, assigned_zone, is_active, is_admin, created_at';
 
 type Row = Record<string, any>;
 
@@ -62,6 +62,7 @@ export function vehicleFromRow(r: Row): BajajVehicle {
     notes: r.notes ?? undefined,
     qrCodeValue: str(r.qr_code_value),
     registeredCity: str(r.registered_city, 'Gondar / ጎንደር'),
+    createdAt: r.created_at ?? undefined,
   };
 }
 
@@ -157,6 +158,8 @@ export function officerFromRow(r: Row): Officer {
     phoneNumber: str(r.phone_number),
     assignedZone: str(r.assigned_zone),
     isActive: r.is_active !== false,
+    isAdmin: r.is_admin === true,
+    createdAt: r.created_at ?? undefined,
   };
 }
 
@@ -240,27 +243,44 @@ export async function insertInspection(i: Omit<Inspection, 'id' | 'createdAt'>):
   fail(error, 'Logging inspection failed');
 }
 
-export async function loginOfficer(username: string, password: string): Promise<SessionUser | null> {
-  const { data, error } = await supabase.rpc('login_officer', {
+/** Website sign-in: only active admins get a session. */
+export async function loginAdmin(username: string, password: string): Promise<SessionUser | null> {
+  const { data, error } = await supabase.rpc('login_admin', {
     p_username: username.trim(),
     p_password: password,
   });
   fail(error, 'Login failed');
   const row = Array.isArray(data) ? data[0] : data;
-  if (!row) return null;
-  return { name: row.full_name, badge: row.badge_number, role: row.role };
+  if (!row?.token) return null;
+  return { name: row.full_name, badge: row.badge_number, role: row.role, token: row.token };
 }
 
-export async function createOfficer(input: {
-  username: string;
-  password: string;
-  fullName: string;
-  badgeNumber: string;
-  role: string;
-  phoneNumber: string;
-  assignedZone: string;
-}): Promise<void> {
+export async function checkAdminSession(token: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('check_admin_session', { p_token: token });
+  fail(error, 'Session check failed');
+  return data === true;
+}
+
+export async function logoutAdmin(token: string): Promise<void> {
+  const { error } = await supabase.rpc('logout_admin', { p_token: token });
+  fail(error, 'Logout failed');
+}
+
+export async function createOfficer(
+  token: string,
+  input: {
+    username: string;
+    password: string;
+    fullName: string;
+    badgeNumber: string;
+    role: string;
+    phoneNumber: string;
+    assignedZone: string;
+    isAdmin: boolean;
+  }
+): Promise<void> {
   const { error } = await supabase.rpc('create_officer', {
+    p_token: token,
     p_username: input.username,
     p_password: input.password,
     p_full_name: input.fullName,
@@ -268,11 +288,21 @@ export async function createOfficer(input: {
     p_role: input.role,
     p_phone_number: input.phoneNumber,
     p_assigned_zone: input.assignedZone,
+    p_is_admin: input.isAdmin,
   });
   fail(error, 'Creating officer failed');
 }
 
-export async function setOfficerActive(id: string, active: boolean): Promise<void> {
-  const { error } = await supabase.rpc('set_officer_active', { p_id: id, p_active: active });
+export async function setOfficerActive(token: string, id: string, active: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_officer_active', { p_token: token, p_id: id, p_active: active });
   fail(error, 'Updating officer failed');
+}
+
+export async function changeOfficerPassword(token: string, id: string, newPassword: string): Promise<void> {
+  const { error } = await supabase.rpc('change_officer_password', {
+    p_token: token,
+    p_id: id,
+    p_new_password: newPassword,
+  });
+  fail(error, 'Changing password failed');
 }
