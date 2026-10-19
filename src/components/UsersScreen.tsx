@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { MapPin, Plus, Search, X } from 'lucide-react';
+import { KeyRound, MapPin, Plus, Search, ShieldCheck, X } from 'lucide-react';
 import { Inspection, Officer, TrafficViolationReport } from '../types';
-import { createOfficer, setOfficerActive } from '../lib/api';
+import { changeOfficerPassword, createOfficer, formatTimestamp, setOfficerActive } from '../lib/api';
 import { sounds } from '../utils/sound';
 
 interface UsersScreenProps {
   officers: Officer[];
   reports: TrafficViolationReport[];
   inspections: Inspection[];
+  token: string;
   onChanged: () => Promise<void>;
 }
 
@@ -17,6 +18,7 @@ const ROLES = [
   'Verification Specialist',
   'Patrol Officer',
   'Director HQ',
+  'Administrator',
 ];
 
 const ZONES = [
@@ -35,15 +37,21 @@ const emptyForm = {
   role: ROLES[0],
   phoneNumber: '+251 9',
   assignedZone: ZONES[0],
+  isAdmin: false,
 };
 
-export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, inspections, onChanged }) => {
+export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, inspections, token, onChanged }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pwOfficer, setPwOfficer] = useState<Officer | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwDone, setPwDone] = useState(false);
 
   const todayKey = new Date().toDateString();
   const statsFor = (o: Officer) => {
@@ -79,7 +87,7 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
     }
     setIsSaving(true);
     try {
-      await createOfficer(form);
+      await createOfficer(token, form);
       await onChanged();
       sounds.playSuccess();
       setForm(emptyForm);
@@ -95,12 +103,44 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
   const toggleActive = async (o: Officer) => {
     setBusyId(o.id);
     try {
-      await setOfficerActive(o.id, !o.isActive);
+      await setOfficerActive(token, o.id, !o.isActive);
       await onChanged();
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err));
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const openPasswordForm = (o: Officer) => {
+    setPwOfficer(o);
+    setNewPassword('');
+    setConfirmPassword('');
+    setPwError(null);
+    setPwDone(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pwOfficer) return;
+    setPwError(null);
+    if (newPassword.length < 6) {
+      setPwError('የይለፍ ቃል ቢያንስ 6 ፊደላት መሆን አለበት (Password: min 6 characters)');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError('የይለፍ ቃሎቹ አይመሳሰሉም (Passwords do not match)');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await changeOfficerPassword(token, pwOfficer.id, newPassword);
+      sounds.playSuccess();
+      setPwDone(true);
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -158,6 +198,7 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
                 <th className="px-3 py-3.5">የስራ ኃላፊነት (Role)</th>
                 <th className="px-3 py-3.5">የተመደበበት ዞን</th>
                 <th className="px-3 py-3.5">ስልክ ቁጥር</th>
+                <th className="px-3 py-3.5">የተመዘገበበት (Registered)</th>
                 <th className="px-3 py-3.5 text-center">የዛሬ ፍተሻዎች</th>
                 <th className="px-3 py-3.5 text-center">የጻፋቸው ቅጣቶች</th>
                 <th className="px-3 py-3.5">ሁኔታ</th>
@@ -167,7 +208,7 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-400">
+                  <td colSpan={10} className="p-8 text-center text-slate-400">
                     {officers.length === 0
                       ? 'ምንም አባል አልተገኘም – የዳታቤዝ ማሻሻያው (migration) መሰራቱን ያረጋግጡ'
                       : 'ምንም አባል አልተገኘም'}
@@ -183,6 +224,12 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
                     <td className="px-3 py-3.5">
                       <div className="font-bold text-slate-900 text-sm">{o.fullName}</div>
                       <div className="text-[10px] text-slate-400 font-mono">@{o.username}</div>
+                      {o.isAdmin && (
+                        <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                          <ShieldCheck size={10} />
+                          አስተዳዳሪ (Admin)
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-3.5 text-slate-700 font-medium">{o.role}</td>
                     <td className="px-3 py-3.5">
@@ -192,6 +239,9 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
                       </span>
                     </td>
                     <td className="px-3 py-3.5 font-mono text-slate-600">{o.phoneNumber || '-'}</td>
+                    <td className="px-3 py-3.5 font-mono text-slate-600 whitespace-nowrap">
+                      {o.createdAt ? formatTimestamp(o.createdAt) : '-'}
+                    </td>
                     <td className="px-3 py-3.5 text-center font-mono font-bold text-blue-700 text-sm">{st.checksToday}</td>
                     <td className="px-3 py-3.5 text-center font-mono font-bold text-red-600 text-sm">{st.citations}</td>
                     <td className="px-3 py-3.5">
@@ -211,7 +261,14 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-3.5 text-right">
+                    <td className="px-3 py-3.5 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => openPasswordForm(o)}
+                        className="px-2.5 py-1 mr-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg text-[11px] font-bold text-[#0C355B] transition cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <KeyRound size={12} />
+                        የይለፍ ቃል ቀይር (Password)
+                      </button>
                       <button
                         disabled={busyId === o.id}
                         onClick={() => toggleActive(o)}
@@ -277,6 +334,10 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
                   ))}
                 </select>
               </div>
+              <label className="sm:col-span-2 flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                <input type="checkbox" checked={form.isAdmin} onChange={(e) => setForm({ ...form, isAdmin: e.target.checked })} />
+                አስተዳዳሪ ይሁን – ወደ ድረ-ገጹ መግባት ይችላል (Administrator – can sign in to this panel)
+              </label>
               {formError && <p className="sm:col-span-2 text-xs text-red-600 font-medium">{formError}</p>}
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
@@ -286,6 +347,53 @@ export const UsersScreen: React.FC<UsersScreenProps> = ({ officers, reports, ins
               <button type="submit" disabled={isSaving} className="px-4 py-2 bg-[#0C355B] text-white rounded-xl text-xs font-bold disabled:opacity-60">
                 {isSaving ? 'በማስቀመጥ ላይ...' : 'አስቀምጥ (Save)'}
               </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {pwOfficer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
+          <form
+            onSubmit={handleChangePassword}
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden my-auto"
+          >
+            <div className="bg-[#0C355B] text-white px-5 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-sm">የይለፍ ቃል ቀይር (Change Password)</h3>
+              <button type="button" onClick={() => setPwOfficer(null)} className="text-white/70 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-xs text-slate-600">
+                <span className="font-bold text-slate-900">{pwOfficer.fullName}</span>{' '}
+                <span className="font-mono text-slate-400">@{pwOfficer.username}</span>
+              </p>
+              {pwDone ? (
+                <p className="text-xs text-emerald-700 font-bold">የይለፍ ቃሉ ተቀይሯል (Password changed)</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">አዲስ የይለፍ ቃል (New password) *</label>
+                    <input type="password" autoComplete="new-password" className={input} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">ድገም (Confirm password) *</label>
+                    <input type="password" autoComplete="new-password" className={input} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                  </div>
+                </>
+              )}
+              {pwError && <p className="text-xs text-red-600 font-medium">{pwError}</p>}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <button type="button" onClick={() => setPwOfficer(null)} className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                {pwDone ? 'ዝጋ (Close)' : 'ይቅር (Cancel)'}
+              </button>
+              {!pwDone && (
+                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-[#0C355B] text-white rounded-xl text-xs font-bold disabled:opacity-60">
+                  {isSaving ? 'በማስቀመጥ ላይ...' : 'አስቀምጥ (Save)'}
+                </button>
+              )}
             </div>
           </form>
         </div>

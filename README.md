@@ -34,6 +34,19 @@ Optional: `flutter_app/supabase_schema.sql` adds sample vehicles and reports.
 > ```
 > New officers can be added from the website: **Officers & Workforce → Add Officer**.
 
+Then run the **whole** file `supabase/migrations/20261019000000_admin_only_panel.sql` the same way.
+It makes the website **admin-only** and records when every officer was registered.
+If no admin exists it creates one:
+
+| Username | Password |
+| --- | --- |
+| `admin` | `ChangeMe@2026` |
+
+> ⚠️ Sign in as `admin` right away and change this password:
+> **Officers & Workforce → admin → Change Password**.
+> Only admins can sign in to the website, and only admins can add officers, disable them or
+> change anyone's password. Field officers keep signing in to the phone app as before.
+
 ## 2. Website
 
 ```bash
@@ -73,6 +86,9 @@ automatically when the connection returns (shown as "Not synced yet" in the hist
 
 - Passwords are stored as bcrypt hashes and checked inside the database (`login_officer` RPC);
   the hash is never readable through the public API.
+- Website sign-in (`login_admin`) only succeeds for active admins and returns a 12-hour session
+  token. Adding officers, enabling/disabling them and changing passwords are RPCs that check
+  that token on the server, so they cannot be called with the public key alone.
 - The publishable key in the code is meant to be public; access is controlled by Row Level Security.
 - Current RLS still allows anyone holding the app's key to insert vehicles/reports. The next
   hardening step is moving officers to **Supabase Auth** and restricting writes to signed-in users.

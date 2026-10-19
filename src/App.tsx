@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ErpLayout } from './components/erp/ErpLayout';
 import { ErpDashboard } from './components/erp/ErpDashboard';
 import { ErpNewVehicleModal } from './components/erp/ErpNewVehicleModal';
@@ -14,7 +14,7 @@ import { QrCardModal } from './components/QrCardModal';
 import { BajajVehicle, ReportStatus, SessionUser, TrafficViolationReport } from './types';
 import { sounds } from './utils/sound';
 import { useLiveData } from './hooks/useLiveData';
-import { insertReport, insertVehicle, updateReportStatus } from './lib/api';
+import { checkAdminSession, insertReport, insertVehicle, logoutAdmin, updateReportStatus } from './lib/api';
 import { clearSession, loadSession, saveSession } from './lib/session';
 
 export default function App() {
@@ -40,10 +40,30 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    if (currentUser) logoutAdmin(currentUser.token).catch(() => undefined);
     clearSession();
     setCurrentUser(null);
     sounds.playScanBeep();
   };
+
+  // A saved session only counts if the server still accepts its admin token
+  // (expired, signed out elsewhere, account disabled or no longer admin).
+  const sessionToken = currentUser?.token;
+  useEffect(() => {
+    if (!sessionToken) return;
+    let cancelled = false;
+    checkAdminSession(sessionToken)
+      .then((ok) => {
+        if (!ok && !cancelled) {
+          clearSession();
+          setCurrentUser(null);
+        }
+      })
+      .catch(() => undefined); // offline: keep the session, writes are checked server-side anyway
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionToken]);
 
   // Throws on failure so the modal can show the error and stay open.
   const handleAddNewVehicle = async (newVehicle: BajajVehicle) => {
@@ -112,7 +132,15 @@ export default function App() {
       />
     );
   } else if (currentTab === 'users') {
-    page = <UsersScreen officers={officers} reports={reports} inspections={inspections} onChanged={live.refresh} />;
+    page = (
+      <UsersScreen
+        officers={officers}
+        reports={reports}
+        inspections={inspections}
+        token={currentUser.token}
+        onChanged={live.refresh}
+      />
+    );
   } else if (currentTab === 'settings') {
     page = (
       <SettingsScreen

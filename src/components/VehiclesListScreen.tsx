@@ -19,6 +19,7 @@ import { BajajVehicle } from '../types';
 import { sounds } from '../utils/sound';
 import { QrCardModal } from './QrCardModal';
 import { printQrCards } from '../lib/qr';
+import { formatTimestamp } from '../lib/api';
 
 interface VehiclesListScreenProps {
   database: BajajVehicle[];
@@ -66,9 +67,9 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
   });
 
   const exportToCSV = () => {
-    const headers = ['Plate,DID,VIN,Model,Association,Owner,Phone,Status,Expiry\n'];
+    const headers = ['Plate,DID,VIN,Model,Association,Owner,Phone,Status,Expiry,Registered\n'];
     const rows = filtered.map(v => 
-      `"${v.plateNumber}","${v.digitalId}","${v.vin}","${v.bajajModel}","${v.bajajAssociation}","${v.owner}","${v.ownerPhone}","${v.status}","${v.expiryDate}"\n`
+      `"${v.plateNumber}","${v.digitalId}","${v.vin}","${v.bajajModel}","${v.bajajAssociation}","${v.owner}","${v.ownerPhone}","${v.status}","${v.expiryDate}","${v.createdAt ? formatTimestamp(v.createdAt) : ''}"\n`
     );
     const blob = new Blob([...headers, ...rows], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -193,6 +194,7 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
                 <th className="px-3 py-3.5">ሞዴል እና ማህበር</th>
                 <th className="px-3 py-3.5">የተፈቀደ ዞን</th>
                 <th className="px-3 py-3.5">ፈቃድ የሚያበቃበት</th>
+                <th className="px-3 py-3.5">የተመዘገበበት (Registered)</th>
                 <th className="px-3 py-3.5">የፈቃድ ሁኔታ</th>
                 <th className="px-4 py-3.5 text-right">የአስተዳደር እርምጃ</th>
               </tr>
@@ -200,7 +202,7 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-400">
+                  <td colSpan={9} className="p-8 text-center text-slate-400">
                     ምንም ተሽከርካሪ አልተገኘም (No matching vehicles in registry)
                   </td>
                 </tr>
@@ -250,6 +252,11 @@ export const VehiclesListScreen: React.FC<VehiclesListScreenProps> = ({
                         <span className={`text-[11px] font-bold ${isExpired ? 'text-red-700' : 'text-slate-700'}`}>
                           {v.expiryDate}
                         </span>
+                      </td>
+
+                      {/* Registered at */}
+                      <td className="px-3 py-3 font-mono text-[11px] text-slate-600 whitespace-nowrap">
+                        {v.createdAt ? formatTimestamp(v.createdAt) : '-'}
                       </td>
 
                       {/* Status */}

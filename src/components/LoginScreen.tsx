@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { ShieldLogo } from './ShieldLogo';
 import { sounds } from '../utils/sound';
-import { loginOfficer } from '../lib/api';
+import { loginAdmin } from '../lib/api';
 import { SessionUser } from '../types';
 
 interface LoginScreenProps {
@@ -32,11 +32,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     sounds.playScanBeep();
 
     try {
-      const user = await loginOfficer(username, password);
+      const user = await loginAdmin(username, password);
       setIsLoading(false);
       if (!user) {
         sounds.playAlert();
-        setErrorMessage('የተጠቃሚ ስም ወይም የይለፍ ቃል የተሳሳተ ነው (Invalid username or password)');
+        setErrorMessage('የተጠቃሚ ስም ወይም የይለፍ ቃል የተሳሳተ ነው፣ ወይም አስተዳዳሪ አይደሉም (Invalid username or password, or not an administrator)');
         return;
       }
       sounds.playSuccess();
